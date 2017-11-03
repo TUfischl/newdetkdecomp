@@ -106,6 +106,7 @@ int main(int argc, char **argv)
 
 	// Check command line arguments and initialize random number generator
 	usage(argc, argv, &K, &bDef);
+	//srand(100);
 	srand((unsigned int)time(NULL));
 	iRandomInit = random_range(999, 9999);
 	for (int i = 0; i < iRandomInit; i++) rand();

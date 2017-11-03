@@ -180,6 +180,7 @@ HE_VEC Hypergraph::getMCSOrder()
 
 			//randomly select the next node with highest connectivity
 			he = candidates[random_range(0, candidates.size() - 1)];
+			candidates.clear();
 			he->setLabel(1);
 			order.push_back(he);
 		}

@@ -145,6 +145,134 @@ OUTPUT: Set: Selection of hyperedges in Edges such that all nodes are covered
 		return: Number of selected hyperedges; -1 if there is no such selection
 */
 
+/*
+int DetKDecomp::coverNodes(HE_VEC &Edges, vector<int> &Set, vector<bool> &bInComp, vector<int> &CovWeights, int iUncovered, bool bReconstr)
+{
+	int iPos, iNbrSel, *iTmpLabels, iWeight, iInCompSel, i, iSize = Edges.size();
+	bool bSelect, bCovered, bBack;
+	list<int *> LabelStack;
+	list<int *>::iterator ListIter;
+
+	iPos = iNbrSel = iInCompSel = 0;
+	iUncovered == 0 ? bCovered = true : bCovered = false;
+
+	// Reconstruct the search tree according to Set
+	if (bReconstr) {
+		if (Set[0] == -1) return -1;
+
+		for (iNbrSel = 0; Set[iNbrSel + 1] != -1; iNbrSel++) {
+			iPos = Set[iNbrSel];
+			if (bInComp[iPos])
+				++iInCompSel;
+
+			iTmpLabels = new int[Edges[iPos]->getNbrOfVertices()];
+			if (iTmpLabels == NULL)
+				writeErrorMsg("Error assigning memory.", "DetKDecomp::coverNodes");
+
+			// Save labels of nodes in the actual hyperedge and label these nodes by 1
+			for (i = 0; i < Edges[iPos]->getNbrOfVertices(); i++) {
+				iTmpLabels[i] = Edges[iPos]->getVertex(i)->getLabel();
+				Edges[iPos]->getVertex(i)->setLabel(1);
+			}
+
+			LabelStack.push_back(iTmpLabels);
+		}
+
+		iPos = Set[iNbrSel];
+		iUncovered = 0;
+		for (i = 0; i < Edges[iPos]->getNbrOfVertices(); i++)
+			if (Edges[iPos]->getVertex(i)->getLabel() == 0)
+				++iUncovered;
+		++iPos;
+	}
+
+	// Search for a new set of covering hyperedges
+	while (!bCovered) {
+		for (bBack = false; !bCovered; iPos++) {
+
+			// Check if nodes can be covered by the remaining hyperedges;
+			// prune the search tree if not
+			i = iPos + (MyK - iNbrSel);
+			if (i < iSize)
+				iWeight = CovWeights[iPos] - CovWeights[i];
+			else
+				if (iPos < iSize)
+					iWeight = CovWeights[iPos];
+				else
+					iWeight = 0;
+			if ((iWeight < iUncovered) || (iWeight == 0)) {
+				bBack = true;
+				break;
+			}
+
+			// Check if the actual hyperedge covers some uncovered node
+			bSelect = false;
+			if (bInComp[iPos] || (iInCompSel > 0) || (iNbrSel < MyK - 1))
+				for (i = 0; i < Edges[iPos]->getNbrOfVertices(); i++)
+					if (Edges[iPos]->getVertex(i)->getLabel() == 0) {
+						bSelect = true;
+						break;
+					}
+
+			if (bSelect) {
+				// Select the actual hyperedge
+				Set[iNbrSel++] = iPos;
+				if (bInComp[iPos])
+					++iInCompSel;
+
+				iTmpLabels = new int[Edges[iPos]->getNbrOfVertices()];
+				if (iTmpLabels == NULL)
+					writeErrorMsg("Error assigning memory.", "DetKDecomp::coverNodes");
+
+				// Save labels of nodes in the actual hyperedge and label these nodes by 1
+				for (i = 0; i < Edges[iPos]->getNbrOfVertices(); i++) {
+					iTmpLabels[i] = Edges[iPos]->getVertex(i)->getLabel();
+					Edges[iPos]->getVertex(i)->setLabel(1);
+					if (iTmpLabels[i] == 0)
+						--iUncovered;
+				}
+				LabelStack.push_back(iTmpLabels);
+
+				// Check whether all nodes are covered
+				if (iUncovered == 0)
+					bCovered = true;
+			}
+		}
+
+		if (bBack) {
+			if (iNbrSel == 0) {
+				// No more possibilities to cover the nodes
+				iNbrSel = -1;
+				break;
+			}
+			else {
+				// Undo the last selection if the nodes cannot be covered in this way
+				iPos = Set[--iNbrSel];
+				if (bInComp[iPos])
+					--iInCompSel;
+
+				iTmpLabels = LabelStack.back();
+				LabelStack.pop_back();
+
+				for (i = 0; i < Edges[iPos]->getNbrOfVertices(); i++) {
+					Edges[iPos]->getVertex(i)->setLabel(iTmpLabels[i]);
+					if (iTmpLabels[i] == 0)
+						++iUncovered;
+				}
+				delete[] iTmpLabels;
+				++iPos;
+			}
+		}
+	}
+
+	if (iNbrSel >= 0)
+		Set[iNbrSel] = -1;
+	for (ListIter = LabelStack.begin(); ListIter != LabelStack.end(); ListIter++)
+		delete[] * ListIter;
+
+	return iNbrSel;
+}*/
+
 int DetKDecomp::coverNodes(HE_VEC &Edges, vector<int> &Set, vector<bool> &InComp, vector<int> &CovWeights, int Uncovered, bool Reconstr)
 {
 	int i;
@@ -385,7 +513,7 @@ OUTPUT: Partitions: Components consisting of sets of hyperedges
 		return: Number of components
 */
 
-size_t DetKDecomp::separate(HE_VEC *HEdges, vector<HE_VEC*> &Partitions, vector<VE_VEC*> &Connectors)
+int DetKDecomp::separate(HE_VEC *HEdges, vector<HE_VEC*> &Partitions, vector<VE_VEC*> &Connectors)
 {
 	int label; 
 	HE_VEC *part;
@@ -431,9 +559,13 @@ size_t DetKDecomp::separate(HE_VEC *HEdges, vector<HE_VEC*> &Partitions, vector<
 
 			Partitions.push_back(part);
 			Connectors.push_back(conn);
+
+			//Relabel connecting vertices
+			for (auto v : *conn)
+				v->setLabel(-1);
 		}
 
-	return Partitions.size();
+	return (int)Partitions.size();
 }
 
 
@@ -875,6 +1007,17 @@ Hypertree *DetKDecomp::decomp(HE_VEC *HEdges, VE_VEC *Connector, int RecLevel)
 						MySuccSepParts.push_back(succ_parts);
 						MyFailSepParts.push_back(fail_parts);
 					}
+
+					//Debugging output
+					/*
+					cout << "+++ Separator: ";
+					for (int i = 0; i < separator->size(); i++) {
+						cout << (*separator)[i]->getName();
+						if (i < separator->size()-1)
+							cout << ",";
+					}
+					cout << endl;
+					*/
 
 					// Separate hyperedges into partitions with corresponding connector nodes
 					nbr_of_parts = separate(HEdges, partitions, child_connectors);
