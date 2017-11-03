@@ -8,7 +8,6 @@
 #include<unordered_set>
 
 #include "Hyperedge.h"
-#include "Hypergraph.h"
 #include "Parser.h"
 
 class Hypergraph
