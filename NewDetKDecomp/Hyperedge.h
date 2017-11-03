@@ -11,6 +11,7 @@
 #include <string>
 #include <vector>
 #include <unordered_set>
+#include <algorithm>
 
 #include "Component.h"
 #include "Vertex.h"

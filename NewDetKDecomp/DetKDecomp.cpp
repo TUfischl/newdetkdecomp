@@ -80,7 +80,7 @@ int DetKDecomp::setInitSubset(VE_VEC *Vertices, HE_VEC &Edges, vector<int> &Set,
 		e++;
 	}
 
-	sortVectors<Hyperedge*>((vector<Hyperedge*>)Edges, CovWeights, 0, (int)Edges.size()-1);
+	sortVectors<Hyperedge*>(Edges, CovWeights, 0, (int)Edges.size()-1);
 
 	// Reset bInComp and summarize weights
 	for(int i=0; i < (int)Edges.size(); i++) {
@@ -150,7 +150,7 @@ int DetKDecomp::coverNodes(HE_VEC &Edges, vector<int> &Set, vector<bool> &InComp
 	int i;
 
 	int pos, nbr_sel, in_comp_sel, weight;
-	auto size{ Edges.size() };
+	int size{ (int)Edges.size() };
 	bool covered, back, select;
 	list<vector<int>> label_stack;
 	list<int *>::iterator ListIter;
@@ -527,7 +527,7 @@ size_t DetKDecomp::divideCompEdges(HE_VEC *HEdges, VE_VEC *Vertices, HE_VEC &Inn
 {
 	//int iNbrOfNodes, iNbrOfEdges, iNbrOfNeighbours, i, j;
 	bool covered;
-	auto cnt_edges{ HEdges->size() };
+	size_t cnt_edges{ HEdges->size() };
 	list<Hyperedge *> innerb, outerb;
 	
 	MyHGraph->resetEdgeLabels();
@@ -737,7 +737,7 @@ Hypertree *DetKDecomp::decomp(HE_VEC *HEdges, VE_VEC *Connector, int RecLevel)
 	HE_VEC *separator;
 	vector<int> cov_sep_set, cov_weights;
 	vector<bool> in_comp, cut_parts;
-	auto cnt_edges{ HEdges->size() };
+	size_t cnt_edges{ HEdges->size() };
 	int comp_end, nbr_sel_cov, i_add, sep_size, nbr_of_parts;
 	bool add_edge, reused_sep, fail_sep;
     Hypertree *htree{ nullptr };

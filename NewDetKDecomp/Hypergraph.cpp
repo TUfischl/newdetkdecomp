@@ -132,7 +132,7 @@ HE_VEC Hypergraph::getMCSOrder()
 {
 	HE_VEC order;
 	HE_VEC candidates;
-	auto he_iter{ MyEdges.begin() };
+	HE_VEC::iterator he_iter;
 	uint max_card{ 0 };
 	uint tmp_card{ 0 };
 	
