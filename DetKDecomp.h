@@ -46,7 +46,7 @@ private:
 	Hypertree *getHTNode(HE_VEC *HEdges, VE_VEC *ChiConnect, list<Hypertree *> *Subtrees);
 
 	// Separates a set of hyperedges into partitions with corresponding connecting nodes
-	size_t separate(HE_VEC *HEdges, vector<HE_VEC*> &Partitions, vector<VE_VEC*> &Connectors);
+	int separate(HE_VEC *HEdges, vector<HE_VEC*> &Partitions, vector<VE_VEC*> &Connectors);
 
 	// Orders hyperedges according to maximum cardinality search
 	//void orderMCS(Hyperedge **HEdges, int iNbrOfEdges);
