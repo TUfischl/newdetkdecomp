@@ -6,18 +6,16 @@
 #define CLS_DetKDecomp
 
 #include "Globals.h"
+#include "Decomp.h"
 
 class Hypergraph;
 class Hyperedge;
 class Hypertree;
 class Vertex;
 
-class DetKDecomp
+class DetKDecomp : Decomp
 {
 private:
-	// Underlying hypergraph
-	Hypergraph *MyHGraph;
-
 	// Maximum separator size
 	int MyK;
 
@@ -39,14 +37,8 @@ private:
 	// Covers a set of nodes by a set of edges
 	int coverNodes(HE_VEC &Edges, vector<int> &Set, vector<bool> &InComp, vector<int> &CovWeights, int Uncovered, bool Reconstr);
 
-	// Collects connected hyperedges and the corresponding boundary nodes
-	void collectReachEdges(Hyperedge *Edge, int Label, HE_VEC *Edges, VE_VEC *Connector);
-
 	// Creates a hypertree node
 	Hypertree *getHTNode(HE_VEC *HEdges, VE_VEC *ChiConnect, list<Hypertree *> *Subtrees);
-
-	// Separates a set of hyperedges into partitions with corresponding connecting nodes
-	int separate(HE_VEC *HEdges, vector<HE_VEC*> &Partitions, vector<VE_VEC*> &Connectors);
 
 	// Orders hyperedges according to maximum cardinality search
 	//void orderMCS(Hyperedge **HEdges, int iNbrOfEdges);
