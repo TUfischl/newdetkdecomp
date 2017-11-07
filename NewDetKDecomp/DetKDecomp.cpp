@@ -27,7 +27,7 @@ using namespace std;
 //////////////////////////////////////////////////////////////////////
 
 
-DetKDecomp::DetKDecomp(Hypergraph *HGraph) : MyHGraph{ HGraph }
+DetKDecomp::DetKDecomp(Hypergraph *HGraph) : Decomp( HGraph )
 {
 	MyK = 0;
 }
@@ -64,7 +64,7 @@ int DetKDecomp::setInitSubset(VE_VEC *Vertices, HE_VEC &Edges, vector<int> &Set,
 	int weight, e;
 
 	// Reset node labels
-	MyHGraph->resetVertexLabels(-1);
+	MyHg->resetVertexLabels(-1);
 	for(auto v : *Vertices)
 		v->setLabel(0);
 
@@ -117,7 +117,7 @@ int DetKDecomp::setNextSubset(VE_VEC *Vertices, HE_VEC &Edges, vector<int> &Set,
 {
 	int iUncov;
 
-	MyHGraph->resetVertexLabels(-1);
+	MyHg->resetVertexLabels(-1);
 	for(iUncov=0; iUncov < Vertices->size(); iUncov++)
 		Vertices->at(iUncov)->setLabel(0);
 
@@ -415,47 +415,6 @@ int DetKDecomp::coverNodes(HE_VEC &Edges, vector<int> &Set, vector<bool> &InComp
 	return nbr_sel;
 }
 
-
-/*
-***Description***
-The method labels all unlabeled hyperedges reachable from Edge with iLabel. It is assumed that
-all separating nodes/edges are labeled by -1 and all other nodes/edges are labeled by 0.
-
-INPUT:	Edge: Hyperedge
-		iLabel: Label of all hyperedges in the same component as Edge
-OUTPUT: Egdes: List of all hyperedges in the same component as Edge
-        Connector: List of nodes connecting the component with the separator
-*/
-
-void DetKDecomp::collectReachEdges(Hyperedge *Edge, int Label, HE_VEC *Edges, VE_VEC *Connector)
-{
-	//Vertex *ConnNode;
-	//list<Hyperedge *> tmp;
-
-	Edge->setLabel(Label);
-	Edges->push_back(Edge);
-
-	for (int i = 0; i < Edges->size(); i++) {
-		for(auto v : (*Edges)[i]->allVertices()) {
-			switch(v->getLabel()) {
-				case 0:	 // Collect hyperedges connected via each node
-						 v->setLabel(Label);
-						 for(auto he : MyHGraph->allVertexNeighbors(v))
-							if(he->getLabel() == 0) {
-								he->setLabel(Label);
-								Edges->push_back(he);
-							}
-						 break;
-				case -1: // Node connects the component with the separator
-						 Connector->push_back(v);
-						 v->setLabel(-2);
-						 break;
-			}
-		}
-	}
-}
-
-
 /*
 ***Description***
 The method creates a new hypertree-node, inserts the given hyperedges into the lambda-set,
@@ -474,7 +433,7 @@ Hypertree *DetKDecomp::getHTNode(HE_VEC *HEdges, VE_VEC *ChiConnect, list<Hypert
 	Hypertree *HTree;
 
 	// Create a new hypertree-node
-	HTree = new Hypertree(MyHGraph);
+	HTree = new Hypertree(MyHg);
 	if(HTree == nullptr)
 		writeErrorMsg("Error assigning memory.", "DetKDecomp::getHTNode");
 
@@ -497,75 +456,6 @@ Hypertree *DetKDecomp::getHTNode(HE_VEC *HEdges, VE_VEC *ChiConnect, list<Hypert
 			HTree->insChild(*it);
 
 	return HTree;
-}
-
-
-/*
-***Description***
-The method partitions a given set of hyperedges into connected components, i.e., into sets
-of hyperedges in the same component and sets of nodes connecting the components with the
-separator. It is assumed that separating nodes and hyperedges are labeled by -1 and all
-other nodes and hyperedges are labeled by 0.
-
-INPUT:	HEdges: Hyperedges to be partitioned
-OUTPUT: Partitions: Components consisting of sets of hyperedges
-		Connectors: Sets of nodes connecting each component with the separator
-		return: Number of components
-*/
-
-int DetKDecomp::separate(HE_VEC *HEdges, vector<HE_VEC*> &Partitions, vector<VE_VEC*> &Connectors)
-{
-	int label; 
-	HE_VEC *part;
-	//list<Hyperedge *> edges;
-	//list<HE_VEC *> parts;
-	//list<Hyperedge *>::iterator EIter1;
-	//list<Hyperedge **>::iterator EIter2;
-	VE_VEC *conn;
-	//list<Vertex *> connector;
-	//list<VE_VEC *> conns;
-	//list<Vertex *>::iterator niter1;
-	//list<VE_VEC **>::iterator niter2;
-
-	for(auto he : *HEdges)
-		if(he->getLabel() == 0) {
-			part = new HE_VEC;
-			conn = new VE_VEC;
-			//edges.clear();
-			//connector.clear();
-			
-			// Search for connected hyperedges
-			label = (int)Partitions.size()+1;
-			collectReachEdges(he, label, part, conn);
-
-			/*
-			Part = new Hyperedge*[Edges.size()+1];
-			Conn = new Node*[Connector.size()+1];
-			if((Part == NULL) || (Conn == NULL))
-				writeErrorMsg("Error assigning memory.", "DetKDecomp::separate");
-
-			// Store connected hyperedges in an array
-			for(j=0, EIter1=Edges.begin(); EIter1 != Edges.end(); j++, EIter1++)
-				Part[j] = *EIter1;
-			Part[j] = NULL;
-
-			// Store connecting nodes in an array
-			for(j=0, NIter1=Connector.begin(); NIter1 != Connector.end(); j++, NIter1++) {
-				Conn[j] = *NIter1;
-				Conn[j]->setLabel(-1);
-			}
-			Conn[j] = NULL;
-			*/
-
-			Partitions.push_back(part);
-			Connectors.push_back(conn);
-
-			//Relabel connecting vertices
-			for (auto v : *conn)
-				v->setLabel(-1);
-		}
-
-	return (int)Partitions.size();
 }
 
 
@@ -662,14 +552,14 @@ size_t DetKDecomp::divideCompEdges(HE_VEC *HEdges, VE_VEC *Vertices, HE_VEC &Inn
 	size_t cnt_edges{ HEdges->size() };
 	list<Hyperedge *> innerb, outerb;
 	
-	MyHGraph->resetEdgeLabels();
+	MyHg->resetEdgeLabels();
 	for(auto he : *HEdges)
 		he->setLabel(1);
 
 	// Compute the hyperedges containing a boundary node and store them
 	// in InnerB if they are contained in the given set and in OuterB otherwise
 	for(auto v : *Vertices)
-		for(auto he : MyHGraph->allVertexNeighbors(v)) {
+		for(auto he : MyHg->allVertexNeighbors(v)) {
 			switch(he->getLabel()) {
 				case 0:	// Hyperedge is not contained in HEdges
 						he->setLabel(-1);
@@ -692,8 +582,8 @@ size_t DetKDecomp::divideCompEdges(HE_VEC *HEdges, VE_VEC *Vertices, HE_VEC &Inn
 		if (he->getLabel() > 0)
 			Inner.push_back(he);
 
-	MyHGraph->resetVertexLabels();
-	MyHGraph->resetEdgeLabels();
+	MyHg->resetVertexLabels();
+	MyHg->resetEdgeLabels();
 	for(auto he : outerb)
 		he->setLabel(1);
 
@@ -713,7 +603,7 @@ size_t DetKDecomp::divideCompEdges(HE_VEC *HEdges, VE_VEC *Vertices, HE_VEC &Inn
 		// Check whether some hyperedge in OuterB in the neighbourhood of the actual hyperedge
 		// contains no node labeled with 1; in this case it can be removed from OuterB since its 
 		// boundery nodes are covered by the actual hyperedge in OuterB
-		for(auto he : MyHGraph->allEdgeNeighbors(*it))
+		for(auto he : MyHg->allEdgeNeighbors(*it))
 			if(he->getLabel() != 0) {
 				covered = true;
 				for(auto v : he->allVertices())
@@ -964,8 +854,8 @@ Hypertree *DetKDecomp::decomp(HE_VEC *HEdges, VE_VEC *Connector, int RecLevel)
 					// cout << "(" << iRecLevel << ")"; cout.flush();
 
 					// Set labels of separating nodes and hyperedges to -1
-					MyHGraph->resetEdgeLabels();
-					MyHGraph->resetVertexLabels();
+					MyHg->resetEdgeLabels();
+					MyHg->resetVertexLabels();
 					for(i=0; i < nbr_sel_cov; i++) {
 						bound_edges[cov_sep_set[i]]->labelAll(-1);
 						/*
@@ -1229,7 +1119,7 @@ Hypertree *DetKDecomp::buildHypertree(int K)
 	MyK = K;
 
 	// Order hyperedges heuristically
-	HEdges = MyHGraph->getMCSOrder();
+	HEdges = MyHg->getMCSOrder();
 
 	// Store initial heuristic order as weight
 	for(int i=0; i < HEdges.size(); i++)
