@@ -103,6 +103,19 @@ char *uitoa(unsigned int iNumber, char *cString)
 	return cString;
 }
 
+std::ostream & operator<<(std::ostream & out, const HE_VEC & he)
+{
+	out << "(";
+	for (auto it = he.cbegin(); it != he.cend();) {
+		out << (*it)->getName();
+		if (++it != he.cend())
+			out << ",";
+	}
+	out << ")";
+
+	return out;
+}
+
 
 bool isSubset(HE_SET &Set1, HE_SET &Set2)
 {

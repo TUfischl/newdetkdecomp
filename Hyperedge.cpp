@@ -1,14 +1,17 @@
+
+#include <unordered_set>
+
 #include "Globals.h"
 #include "Hyperedge.h"
 
+
 int G_EdgeID = 0;
 
-
-Hyperedge::Hyperedge(const string & name) : Hyperedge(++G_EdgeID, name)
+Hyperedge::Hyperedge(const string & name) : Hyperedge(++G_EdgeID, name) 
 {
 }
 
-Hyperedge::Hyperedge(int id, const string & name, const vector<Vertex*> vertices) : Component( id , name ), MyVertices(vertices)
+Hyperedge::Hyperedge(const string & name, const unordered_set<Vertex*>& vertices) : Hyperedge(++G_EdgeID, name, vertices)
 {
 }
 
@@ -19,18 +22,19 @@ Hyperedge::~Hyperedge()
 void Hyperedge::add(Vertex * v)
 {
 	if (find(v->getId()) == nullptr)
-		MyVertices.push_back(v);
+		MyVertices.insert(v);
 	else
 		writeErrorMsg("Hyperedge " + getName() + " already contains vertex with id " + to_string(v->getId()), "Hyperedge::addVertex");
 }
 
 Vertex * Hyperedge::find(Vertex * v)
 {
-	auto item = std::find(MyVertices.cbegin(), MyVertices.cend(), v);
-	if (item != MyVertices.cend())
-		return *item;
-	else
+	VE_SET::const_iterator it = MyVertices.find(v);
+
+	if (it == MyVertices.cend())
 		return nullptr;
+	else
+		return *it;
 }
 
 Vertex * Hyperedge::find(int id)
@@ -51,9 +55,23 @@ Vertex * Hyperedge::find(const string & name)
 	return nullptr;
 }
 
+
 void Hyperedge::labelAll(int label)
 {
 	this->setLabel(label);
 	for (auto v : MyVertices)
 		v->setLabel(label);
+}
+
+std::ostream & operator<<(std::ostream & out, const Hyperedge & he)
+{
+	out << he.getName() << "(";
+	for (auto v_it = he.MyVertices.cbegin(); v_it != he.MyVertices.cend();) {
+		out << *(*v_it);
+		if ((++v_it) != he.MyVertices.cend())
+			out << ",";
+	}
+	out << ")";
+
+	return out;
 }

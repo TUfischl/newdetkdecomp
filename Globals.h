@@ -38,6 +38,9 @@ int random_range(int iLB, int iUB);
 // Converts an unsigned integer number into a string
 char *uitoa(unsigned int iNumber, char *cString);
 
+// Outputs a set of hyperedges
+std::ostream& operator<< (std::ostream &out, const HE_VEC &he);
+
 template<class T>
 struct Iterable
 {

@@ -19,7 +19,7 @@ public:
 	virtual~Component();
 
 	uint getId() { return MyId; }
-	string getName() { return MyName; }
+	inline string getName() const { return MyName; }
 
 	int getLabel() { return MyLabel; }
 	void setLabel(int label = 0) { MyLabel = label; }

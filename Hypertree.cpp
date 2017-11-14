@@ -971,7 +971,7 @@ void Hypertree::reduceLambda()
 
 void Hypertree::setChi(Hypergraph *HGraph, bool bStrict)
 {
-	int i, j;
+	int i;
 	vector<Hypertree *> CovNodes(HGraph->getNbrOfEdges());
 
 	for(i=0; i < HGraph->getNbrOfEdges(); i++) {
@@ -982,8 +982,8 @@ void Hypertree::setChi(Hypergraph *HGraph, bool bStrict)
 	selCovHTNodes(CovNodes, bStrict);
 	for(i=0; i < HGraph->getNbrOfEdges(); i++)
 		if(CovNodes[i] != nullptr)
-			for(j=0; j < HGraph->getEdge(i)->getNbrOfVertices(); j++)
-				CovNodes[i]->getChi()->insert(HGraph->getEdge(i)->getVertex(j));
+			for(auto v : HGraph->getEdge(i)->allVertices())
+				CovNodes[i]->getChi()->insert(v);
 	
 	setChi_Conn(HGraph);
 }

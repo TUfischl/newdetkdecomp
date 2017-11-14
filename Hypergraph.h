@@ -75,6 +75,8 @@ public:
 		return make_iterable(MyVertices.begin(), MyVertices.end());
 	}
 
+	int nbrOfVertexNeighbors(Vertex *v) { return MyVertexNeighbors[v].size(); }
+
 	auto allVertexNeighbors(Vertex *v) -> decltype(make_iterable(MyVertexNeighbors[v].begin(), MyVertexNeighbors[v].end()))
 	{
 		return make_iterable(MyVertexNeighbors[v].begin(), MyVertexNeighbors[v].end());
@@ -89,6 +91,8 @@ public:
 		return MyVertexNeighbors[v].end();
 	}
 	*/
+
+	int nbrOfEdgeNeighbors(Hyperedge *e) { return MyEdgeNeighbors[e].size(); }
 
 	auto allEdgeNeighbors(Hyperedge *e) -> decltype(make_iterable(MyEdgeNeighbors[e].begin(), MyEdgeNeighbors[e].end()))
 	{
