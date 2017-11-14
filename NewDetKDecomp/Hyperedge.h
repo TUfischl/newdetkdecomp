@@ -18,20 +18,25 @@
 
 using namespace std;
 
+
+
+
+
 #pragma once
 class Hyperedge : public Component
 {
 private:
-	vector<Vertex *> MyVertices;
+	VE_SET MyVertices;
 
 public:
 	//Helper Constructors
 	Hyperedge(const string& name);
-	Hyperedge(int id, const string& name) : Hyperedge(id, name, vector<Vertex*>()) { }
-	Hyperedge(int id, const string& name, vector<Vertex *>::const_iterator begin, vector<Vertex *>::const_iterator end) : Hyperedge(id,name, vector<Vertex *>(begin, end)) { }
+	Hyperedge(const string& name, const unordered_set<Vertex *> &vertices);
+	Hyperedge(int id, const string& name) : Hyperedge(id, name, unordered_set<Vertex*>()) { }
+	Hyperedge(int id, const string& name, unordered_set<Vertex *>::const_iterator begin, unordered_set<Vertex *>::const_iterator end) : Hyperedge(id,name, unordered_set<Vertex *>(begin, end)) { }
 
 	//Real Constructor
-	Hyperedge(int id, const string& name, const vector<Vertex *> vertices);
+	Hyperedge(int id, const string& name, const unordered_set<Vertex *> &vertices) : Component(id, name), MyVertices(vertices) {};
 	virtual~Hyperedge();
 
 	void add(Vertex* v);
@@ -42,7 +47,10 @@ public:
 	Vertex* find(int id);
 	Vertex* find(const string& name);
 
-	Vertex* getVertex(int pos) { return MyVertices[pos]; }
+	bool sameVertices(const Hyperedge &e) { return MyVertices == e.MyVertices;  };
+	bool sameVertices(const VE_SET &v) { return MyVertices == v; };
+
+	//Vertex* getVertex(int pos) { return MyVertices[pos]; }
 
 	//Labels hyperedge and all vertices
 	void labelAll(int label = 0);
@@ -58,6 +66,8 @@ public:
 	{
 		return make_iterable(MyVertices.begin(), MyVertices.end());
 	}
+
+	friend std::ostream& operator<< (std::ostream &out, const Hyperedge &he);
 };
 
 

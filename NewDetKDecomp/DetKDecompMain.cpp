@@ -1,20 +1,31 @@
 /*
+#include "Hypergraph.h"
+#include "Vertex.h"
+#include "Subedges.h"
+#include "SubedgeSeparatorFactory.h"
+
+using namespace std;
+
 int main(int argc, char **argv) {
 	Vertex* v1 = new Vertex("v1");
 	Vertex* v2 = new Vertex("v2");
 	Vertex* v3 = new Vertex("v3");
 	Hyperedge* e1 = new Hyperedge("e1");
 	Hyperedge* e2 = new Hyperedge("e2");
+	Hyperedge* e3 = new Hyperedge("e3");
 
 	e1->add(v1);
 	e1->add(v2);
 	e2->add(v3);
 	e2->add(v1);
+	e3->add(v2);
+	e3->add(v3);
 
 	Hypergraph H;
 
 	H.insertEdge(e1);
 	H.insertEdge(e2);
+	H.insertEdge(e3);
 
 	if (H.isConnected())
 		cout << "Hypergraph is connected!" << endl;
@@ -33,8 +44,49 @@ int main(int argc, char **argv) {
 		cout << i << " ";
 	cout << endl;
 
+	Subedges S(&H,2);
+	HE_SET sub_edges;
+
+	cout << "Subedges for " << *e1 << endl;
+	for (auto he : *(S.getSubedges(e1))) {
+		cout << *he << endl;
+		sub_edges.insert(he);
+	}
+	cout << endl;
+
+	cout << "Subedges for " << *e2 << endl;
+	for (auto he : *(S.getSubedges(e2))){
+		cout << *he << endl;
+	sub_edges.insert(he);
+}
+	cout << endl;
+
+	cout << "Subedges for " << *e3 << endl;
+	for (auto he : *(S.getSubedges(e3))){
+		cout << *he << endl;
+	sub_edges.insert(he);
+	}
+	cout << endl;
+
+	cout << "All subedges:" << endl;
+	for (auto he : sub_edges)
+		cout << *he << endl;
+
+	HE_VEC sep;
+	sep.push_back(e1);
+	sep.push_back(e2);
+
+	
+	cout << "Test SubedgeSeparatorFactory for " << sep << endl;
+	SubedgeSeparatorFactory sf(&H, &sep, &sep, &S);
+	HE_VEC *sub_sep;
+	while ((sub_sep = sf.next()) != nullptr)
+		cout << *sub_sep << endl;
+
 	return 0;
-}*/
+}
+
+*/
 
 // det-k-decomp V1.0
 //
@@ -50,7 +102,7 @@ int main(int argc, char **argv) {
 // way than would be necessary for det-k-decomp.
 
 
-// det-k-decomp V1.0
+// det-k-decomp V2.0
 //
 // Reference paper: G. Gottlob and M. Samer,
 // A Backtracking-Based Algorithm for Computing Hypertree-Decompositions,
@@ -102,7 +154,7 @@ int main(int argc, char **argv)
 	Parser *P;
 	Hypertree *HT;
 
-	cout << "*** det-k-decomp (version 1.0) ***" << endl << endl;
+	cout << "*** det-k-decomp (version 2.0) ***" << endl << endl;
 
 	// Check command line arguments and initialize random number generator
 	usage(argc, argv, &K, &bDef);
@@ -212,12 +264,12 @@ Hypertree *decompK(Hypergraph *HG, int iWidth)
 {
 	time_t start, end;
 	Hypertree *HT;
-	DetKDecomp Decomp(HG);
+	DetKDecomp Decomp(HG, iWidth, true);
 
 	// Apply the decomposition algorithm
 	cout << "Building hypertree (det-" << iWidth << "-decomp) ... " << endl;
 	time(&start);
-	HT = Decomp.buildHypertree(iWidth);
+	HT = Decomp.buildHypertree();
 	time(&end);
 	if (HT == NULL)
 		cout << "Hypertree of width " << iWidth << " not found in " << difftime(end, start) << " sec." << endl << endl;

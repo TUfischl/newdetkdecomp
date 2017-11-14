@@ -21,6 +21,8 @@ public:
 	Vertex(uint id, const string& name) : Component(id,name) { }
 	Vertex(const string& name);
 	virtual~Vertex();
+
+	friend std::ostream& operator<< (std::ostream &out, const Vertex &v);
 };
 
 #endif

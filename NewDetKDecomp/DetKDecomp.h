@@ -12,6 +12,7 @@ class Hypergraph;
 class Hyperedge;
 class Hypertree;
 class Vertex;
+class Subedges;
 
 class DetKDecomp : Decomp
 {
@@ -27,6 +28,10 @@ private:
 
 	// Separator component not decomposable
 	list<list<Hyperedge *> *> MyFailSepParts;
+
+	// Run BIP algorithm
+	bool MyBIP{ false };
+	Subedges *MySubedges{ nullptr };
 
 	// Initializes a Boolean array representing a subset selection
 	int setInitSubset(VE_VEC *Vertices, HE_VEC &Edges,  vector<int> &Set, vector<bool> &InComp, vector<int> &CovWeights);
@@ -55,6 +60,9 @@ private:
 	// Checks whether the parent connector nodes are distributed to different components
 	//bool isSplitSep(Node **Connector, Node ***ChildConnectors);
 
+	// Checks whether a set of edges covers a set of vertices
+	bool covers(HE_VEC *Edges, VE_VEC *Vertices);
+
 	// Builds a hypertree decomposition according to k-decomp by covering connector nodes
 	Hypertree *decomp(HE_VEC *HEdges, VE_VEC *Connector, int RecLevel);
 
@@ -63,13 +71,13 @@ private:
 
 public:
 	// Constructor
-	DetKDecomp(Hypergraph *HGraph);
+	DetKDecomp(Hypergraph *HGraph, int k, bool bip = false);
 
 	// Destructor
 	virtual ~DetKDecomp();
 
-	// Constructs a hypertree decomposition of width at most iK (if it exists)
-	Hypertree *buildHypertree(int K);
+	// Constructs a hypertree decomposition of width at most MyK (if it exists)
+	Hypertree *buildHypertree();
 };
 
 
