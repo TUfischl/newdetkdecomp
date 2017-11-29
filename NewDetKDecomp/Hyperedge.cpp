@@ -21,10 +21,10 @@ Hyperedge::~Hyperedge()
 
 void Hyperedge::add(Vertex * v)
 {
-	if (find(v->getId()) == nullptr)
+	//if (find(v->getId()) == nullptr)
 		MyVertices.insert(v);
-	else
-		writeErrorMsg("Hyperedge " + getName() + " already contains vertex with id " + to_string(v->getId()), "Hyperedge::addVertex");
+	//else
+	//	writeErrorMsg("Hyperedge " + getName() + " already contains vertex with id " + to_string(v->getId()), "Hyperedge::addVertex");
 }
 
 Vertex * Hyperedge::find(Vertex * v)
@@ -61,6 +61,17 @@ void Hyperedge::labelAll(int label)
 	this->setLabel(label);
 	for (auto v : MyVertices)
 		v->setLabel(label);
+}
+
+int totalGravity(HE_VEC & HEdges)
+{
+	int total{ 0 };
+
+	for (auto he : HEdges)
+		total += he->MyGravity;
+
+	return total;
+
 }
 
 std::ostream & operator<<(std::ostream & out, const Hyperedge & he)

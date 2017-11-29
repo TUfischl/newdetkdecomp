@@ -135,6 +135,9 @@ using namespace std;
 #include "Hyperedge.h"
 #include "Globals.h"
 #include "DetKDecomp.h"
+#include "Hingetree.h"
+#include "HingeDecomp.h"
+#include "BalKDecomp.h"
 
 void usage(int, char **, int *, bool *);
 Hypertree *decompK(Hypergraph *, int);
@@ -259,7 +262,7 @@ void usage(int argc, char **argv, int *K, bool *bDef)
 			cInpFile[i] = '.';
 }
 
-
+/*
 Hypertree *decompK(Hypergraph *HG, int iWidth)
 {
 	time_t start, end;
@@ -281,8 +284,76 @@ Hypertree *decompK(Hypergraph *HG, int iWidth)
 	}
 
 	return HT;
+}*/
+
+
+Hypertree *decompK(Hypergraph *HG, int iWidth)
+{
+	time_t start, end;
+	Hypertree *HT;
+	BalKDecomp Decomp(HG, iWidth);
+	BalKDecomp::init(HG, 1);
+
+	// Apply the decomposition algorithm
+	cout << "Building hypertree (det-" << iWidth << "-decomp) ... " << endl;
+	time(&start);
+	HT = Decomp.buildHypertree();
+	time(&end);
+	if (HT == NULL)
+		cout << "Hypertree of width " << iWidth << " not found in " << difftime(end, start) << " sec." << endl << endl;
+	else {
+		cout << "Building hypertree done in " << difftime(end, start) << " sec";
+		cout << " (hypertree-width: " << HT->getHTreeWidth() << ")." << endl << endl;
+
+		HT->shrink(false);
+	}
+
+	return HT;
 }
 
+
+
+/*
+
+Hypertree *decompK(Hypergraph *HG, int iWidth)
+{
+	time_t start, end;
+	Hypertree *htree{ nullptr };
+	HingeDecomp HingeDecomp(HG,iWidth);
+	Hingetree *hinge{ nullptr };
+
+	cout << "Building hingetree" << endl;
+	time(&start);
+	hinge = HingeDecomp.buildHingetree();
+	time(&end);
+	cout << *hinge << endl;
+	cout << "Nbr of Hinges: " << hinge->nbrOfNodes() << endl;
+	cout << "Largest Hinge: " << hinge->sizeOfLargestHinge() << endl;
+	cout << "Building hingetree done in " << difftime(end, start) << " sec" << endl;
+
+	//if (bGhw) {
+
+		// Apply the decomposition algorithm
+		cout << "Building hypertree (det-" << iWidth << "-decomp) ... " << endl;
+		time(&start);
+		htree = HingeDecomp.buildHypertree();
+		time(&end);
+		if (htree == nullptr) {
+			cout << "Hypertree of width " << iWidth << " not found in " << difftime(end, start) << " sec." << endl << endl;
+		}
+		else {
+			cout << "Building hypertree done in " << difftime(end, start) << " sec";
+			cout << " (hypertree-width: " << htree->getHTreeWidth() << ")." << endl << endl;
+
+			htree->shrink(false);
+		}
+
+	//}
+
+	return htree;
+}
+
+*/
 
 bool verify(Hypergraph *HG, Hypertree *HT)
 {

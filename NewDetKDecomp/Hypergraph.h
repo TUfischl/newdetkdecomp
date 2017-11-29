@@ -13,11 +13,18 @@
 class Hypergraph
 {
 private:
+	// Stores a parent hypergraph (hence, this hypergraph is a subgraph/copy of another graph
+	// The desctructor then keeps edges and vertices
+	Hypergraph *MyParent{ nullptr };
+
 	vector<Hyperedge *> MyEdges;
 	vector<Vertex *> MyVertices;
 
 	unordered_map<Vertex *, HE_SET> MyVertexNeighbors;
 	unordered_map<Hyperedge *, HE_SET> MyEdgeNeighbors;
+
+	//Nbr of heavy edges (weight > 1)
+	int MyCntHeavy{ 0 };
 
 	// Labels all edges reachable from Edge
 	void labelReachEdges(Hyperedge *edge);
@@ -29,8 +36,14 @@ public:
 	// Build Hypergraph from a parser object
 	void buildHypergraph(Parser *P);
 
+	// Sets the parent of this hypergraph
+	void setParent(Hypergraph* hg) { MyParent = hg;  }
+
 	// Returns the number of edges in the hypergraph
 	size_t getNbrOfEdges() { return MyEdges.size();  }
+
+	// Returns the number of heavy edges (with weight > 1)
+	int getNbrOfHeavyEdges() { return MyCntHeavy; }
 
 	// Returns the number of nodes in the hypergraph
 	size_t getNbrOfVertices() { return MyVertices.size();  }

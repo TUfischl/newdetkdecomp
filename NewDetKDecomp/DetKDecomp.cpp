@@ -28,7 +28,7 @@ using namespace std;
 //////////////////////////////////////////////////////////////////////
 
 
-DetKDecomp::DetKDecomp(Hypergraph *HGraph, int k, bool bip) : Decomp(HGraph), MyK{ k }, MyBIP{ bip }
+DetKDecomp::DetKDecomp(Hypergraph *HGraph, int k, bool bip) : Decomp(HGraph, k), MyBIP{ bip }
 {
 	if (MyBIP)
 		MySubedges = new Subedges(HGraph, k);
@@ -272,49 +272,6 @@ int DetKDecomp::coverNodes(HE_VEC &Edges, vector<int> &Set, vector<bool> &InComp
 
 /*
 ***Description***
-The method creates a new hypertree-node, inserts the given hyperedges into the lambda-set,
-inserts the nodes of hyperedges labeled by -1 to the chi-set, inserts the nodes in 
-ChiConnect to the chi-set, and adds the given hypertrees as subtrees. It is assumed that
-hyperedges that should be covered by the chi-set are labeled by -1.
-
-INPUT:	HEdges: Hyperedges to be inserted into the lambda-set
-		ChiConnect: Connector nodes that must be a subset of the chi-set
-		Subtrees: Subtrees of the new hypertree-node
-OUTPUT: return: Labeled hypertree-node
-*/
-
-Hypertree *DetKDecomp::getHTNode(HE_VEC *HEdges, VE_VEC *ChiConnect, list<Hypertree *> *Subtrees)
-{
-	Hypertree *HTree;
-
-	// Create a new hypertree-node
-	HTree = new Hypertree(MyHg);
-	if(HTree == nullptr)
-		writeErrorMsg("Error assigning memory.", "DetKDecomp::getHTNode");
-
-	// Insert hyperedges and nodes into the hypertree-node
-	for (auto it = HEdges->cbegin(); it != HEdges->cend(); it++) {
-		HTree->insLambda(*it);
-		if((*it)->getLabel() == -1)
-			for(auto v : (*it)->allVertices())
-				HTree->insChi(v);
-	}
-
-	if(ChiConnect != nullptr)
-		// Insert additional chi-labels to guarantee connectedness
-		for(auto it = ChiConnect->cbegin(); it != ChiConnect->cend(); it++)
-			HTree->insChi(*it);
-
-	if(Subtrees != nullptr)
-		// Insert children into the hypertree-node
-		for(auto it=Subtrees->cbegin(); it != Subtrees->cend(); it++)
-			HTree->insChild(*it);
-
-	return HTree;
-}
-
-/*
-***Description***
 The method divides a given set of hyperedges into inner hyperedges and its boundary according
 to a given set of boundary nodes. The inner hyperedges are those not containing a boundary node.
 All other hyperedges containing a boundary node (within the given set or outside) belong to
@@ -343,15 +300,18 @@ size_t DetKDecomp::divideCompEdges(HE_VEC *HEdges, VE_VEC *Vertices, HE_VEC &Inn
 	// in InnerB if they are contained in the given set and in OuterB otherwise
 	for(auto v : *Vertices)
 		for(auto he : MyHg->allVertexNeighbors(v)) {
-			switch(he->getLabel()) {
+			// Only use normal edges for separators
+			if (!he->isHeavy()) {
+				switch (he->getLabel()) {
 				case 0:	// Hyperedge is not contained in HEdges
-						he->setLabel(-1);
-						outerb.push_back(he);
-						break;
+					he->setLabel(-1);
+					outerb.push_back(he);
+					break;
 				case 1:	// Hyperedge is contained in HEdges
-						he->setLabel(-1);
-						innerb.push_back(he);
-						break;
+					he->setLabel(-1);
+					innerb.push_back(he);
+					break;
+				}
 			}
 		}
 
@@ -526,31 +486,8 @@ Hypertree *DetKDecomp::decomp(HE_VEC *HEdges, VE_VEC *Connector, int RecLevel)
 	HE_VEC inner_edges, bound_edges, add_edges;
 	list<Hyperedge *> *succ_parts, *fail_parts;
 
-		// Stop if the hypergraph can be decomposed into two hypertree-nodes
-	if((Connector->size() == 0) && (cnt_edges > 1) && ((int)ceil(cnt_edges /2.0) <= MyK)) {
-		HE_VEC part;
-		int half = (int)cnt_edges / 2;
-		i = 0;
-		for (auto he : *HEdges) {
-			part.push_back(he);
-			he->setLabel(-1);
-			if (i == half) {
-				htree = getHTNode(&part, nullptr, nullptr);
-				part.clear();
-			}
-			i++;
-		}
-		
-		htree->insChild(getHTNode(&part, nullptr, nullptr));
-		return htree;
-	}
-
-	// Stop if the hypergraph can be decomposed into a single hypertree-node
-	if(cnt_edges <= MyK) {
-		for (auto he : *HEdges) 
-			he->setLabel(-1);
-		return getHTNode(HEdges, Connector, nullptr);
-	}
+	if ((htree = decompTrivial(HEdges, Connector)) != nullptr)
+		return htree;	
 
 	// Divide hyperedges into inner hyperedges and hyperedges containing some connecting nodes
 	comp_end = (int)divideCompEdges(HEdges, Connector, inner_edges, bound_edges);
@@ -567,9 +504,11 @@ Hypertree *DetKDecomp::decomp(HE_VEC *HEdges, VE_VEC *Connector, int RecLevel)
 	// Initialize AddEdges array
 	for (i = 0; i < bound_edges.size(); i++)
 		if (in_comp[i])
-			add_edges.push_back(bound_edges[i]);
+			if (!bound_edges[i]->isHeavy())
+				add_edges.push_back(bound_edges[i]);
 	for (i = 0; i < inner_edges.size(); i++)
-		add_edges.push_back(inner_edges[i]);
+		if (!inner_edges[i]->isHeavy())
+			add_edges.push_back(inner_edges[i]);
 	if(add_edges.size() <= 0)
 		writeErrorMsg("Illegal number of hyperedges.", "DetKDecomp::decomp");
 
@@ -892,10 +831,6 @@ Hypertree *DetKDecomp::buildHypertree()
 	list<list<Hyperedge *> *>::iterator ListIter1, ListIter2;
 	Hypergraph dual;
 	uint i{ 0 };
-
-	if(MyK <= 0)
-		writeErrorMsg("Illegal hypertree-width.", "DetKDecomp::buildHypertree");
-
 
 	// Order hyperedges heuristically
 	HEdges = MyHg->getMCSOrder();

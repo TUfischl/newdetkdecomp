@@ -28,18 +28,21 @@ class Hyperedge : public Component
 private:
 	VE_SET MyVertices;
 
+protected:
+	uint MyGravity{ 1 };
+
 public:
 	//Helper Constructors
 	Hyperedge(const string& name);
 	Hyperedge(const string& name, const unordered_set<Vertex *> &vertices);
 	Hyperedge(int id, const string& name) : Hyperedge(id, name, unordered_set<Vertex*>()) { }
-	Hyperedge(int id, const string& name, unordered_set<Vertex *>::const_iterator begin, unordered_set<Vertex *>::const_iterator end) : Hyperedge(id,name, unordered_set<Vertex *>(begin, end)) { }
+	Hyperedge(int id, const string& name, VE_SET::const_iterator begin, VE_SET::const_iterator end) : Hyperedge(id,name, VE_SET(begin, end)) { }
 
 	//Real Constructor
 	Hyperedge(int id, const string& name, const unordered_set<Vertex *> &vertices) : Component(id, name), MyVertices(vertices) {};
 	virtual~Hyperedge();
 
-	void add(Vertex* v);
+	virtual void add(Vertex* v);
 		
 	size_t getNbrOfVertices() { return MyVertices.size();  }
 
@@ -67,7 +70,11 @@ public:
 		return make_iterable(MyVertices.begin(), MyVertices.end());
 	}
 
+	uint isHeavy() { return MyGravity > 1; }
+	uint getGravity() { return MyGravity; }
+
 	friend std::ostream& operator<< (std::ostream &out, const Hyperedge &he);
+	friend int totalGravity(HE_VEC &HEdges);
 };
 
 

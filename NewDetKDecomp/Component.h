@@ -27,7 +27,7 @@ public:
 	void incLabel() { MyLabel++; }
 	void decLabel() { MyLabel--; }
 
-	uint getWeidght() { return MyWeight; }
+	uint getWeight() { return MyWeight; }
 	void setWeight(uint weight) { MyWeight = weight;  }
 };
 

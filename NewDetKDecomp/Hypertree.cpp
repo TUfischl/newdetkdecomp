@@ -562,12 +562,13 @@ bool Hypertree::remChild(Hypertree *Child)
 }
 
 
-void Hypertree::remChildren()
+void Hypertree::remChildren(bool SetParent, Hypertree *NewParent)
 {
 	list<Hypertree *>::iterator ChildIter;
 
 	for(ChildIter=MyChildren.begin(); ChildIter != MyChildren.end(); ChildIter++)
-		(*ChildIter)->setParent(nullptr);
+		if (SetParent)
+			(*ChildIter)->setParent(NewParent);
 	MyChildren.clear();
 }
 
@@ -1083,6 +1084,20 @@ Hypertree * Hypertree::findCoverNode(Hyperedge * edge)
 			return node;
 
 	return nullptr;
+}
+
+Hypertree * Hypertree::findNodeByLambda(Hyperedge * edge)
+{
+	Hypertree *node{ nullptr };
+	HE_SET::iterator it = MyLambda.find(edge);
+
+	if (it != MyLambda.end())
+		return this;
+
+	for (auto it = MyChildren.begin(); it != MyChildren.end() && node == nullptr; it++)
+		node = (*it)->findNodeByLambda(edge);
+
+	return node;
 }
 
 

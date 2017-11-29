@@ -1,6 +1,8 @@
 #include "Decomp.h"
 #include "Hyperedge.h"
 #include "Hypergraph.h"
+#include "Hypertree.h"
+#include "Superedge.h"
 
 Decomp::~Decomp()
 {
@@ -43,6 +45,133 @@ int Decomp::separate(HE_VEC *HEdges, vector<HE_VEC*> &Partitions, vector<VE_VEC*
 		}
 
 	return (int)Partitions.size();
+}
+
+Hypertree * Decomp::decompTrivial(HE_VEC * HEdges, VE_VEC * Connector)
+{
+	Hypertree *htree{ nullptr };
+	auto cnt_edges{ HEdges->size() };
+	auto total_gravity{ totalGravity(*HEdges) };
+	
+	// Stop if the hypergraph can be decomposed into a single hypertree-node
+	if (total_gravity <= MyK) {
+		for (auto he : *HEdges)
+			he->setLabel(-1);
+		return getHTNode(HEdges, Connector, nullptr);
+	}
+
+	if (Connector == nullptr || Connector->size() == 0) {
+		// check if there are heavy edges (weight != cnt)
+		if (cnt_edges == total_gravity) {
+			// Stop if the hypergraph can be decomposed into two hypertree-nodes 
+			if ((cnt_edges > 1) && ((int)ceil(cnt_edges / 2.0) <= MyK)) {
+				HE_VEC part;
+				int half = (int)cnt_edges / 2;
+				int i = 0;
+				for (auto he : *HEdges) {
+					part.push_back(he);
+					he->setLabel(-1);
+					if (i == half) {
+						htree = getHTNode(&part);
+						part.clear();
+					}
+					i++;
+				}
+
+				htree->insChild(getHTNode(&part));
+
+				return htree;
+			}
+		}
+		else {
+			// decompose in 2 hypertree nodes if possible
+			if (total_gravity <= MyK * 2) {
+				HE_VEC part;
+				Hyperedge* heavy{ nullptr };
+				// find the first heavy edge
+				for (auto it = HEdges->begin(); heavy == nullptr && it != HEdges->end(); it++)
+					if ((*it)->isHeavy())
+						heavy = *it;
+
+				// put all other edges into the first bag
+				for (auto he : *HEdges)
+					if (he != heavy)
+						part.push_back(he);
+				
+				// create htree node
+				htree = getHTNode(&part);
+
+				// create second htree node
+				part.clear();
+				part.push_back(heavy);
+				htree->insChild(getHTNode(&part));
+
+				return htree;
+			}
+		}
+	}
+
+	
+
+	return htree;
+}
+
+
+/*
+***Description***
+The method creates a new hypertree-node, inserts the given hyperedges into the lambda-set,
+inserts the nodes of hyperedges labeled by -1 to the chi-set, inserts the nodes in
+ChiConnect to the chi-set, and adds the given hypertrees as subtrees. It is assumed that
+hyperedges that should be covered by the chi-set are labeled by -1.
+
+INPUT:	HEdges: Hyperedges to be inserted into the lambda-set
+ChiConnect: Connector nodes that must be a subset of the chi-set
+Subtrees: Subtrees of the new hypertree-node
+OUTPUT: return: Labeled hypertree-node
+*/
+
+Hypertree *Decomp::getHTNode(HE_VEC *HEdges, VE_VEC *ChiConnect, list<Hypertree *> *Subtrees, Superedge* Super)
+{
+	Hypertree *HTree;
+
+	// Create a new hypertree-node
+	HTree = new Hypertree(MyHg);
+	if (HTree == nullptr)
+		writeErrorMsg("Error assigning memory.", "DetKDecomp::getHTNode");
+
+	// Insert hyperedges and nodes into the hypertree-node
+	for (auto it = HEdges->cbegin(); it != HEdges->cend(); it++) {
+		HTree->insLambda(*it);
+		//if ((*it)->getLabel() == -1)
+			for (auto v : (*it)->allVertices())
+				HTree->insChi(v);
+	}
+
+	if (ChiConnect != nullptr)
+		// Insert additional chi-labels to guarantee connectedness
+		for (auto it = ChiConnect->cbegin(); it != ChiConnect->cend(); it++)
+			HTree->insChi(*it);
+
+	if (Subtrees != nullptr)
+		// Insert children into the hypertree-node
+		for (auto it = Subtrees->cbegin(); it != Subtrees->cend(); it++)
+			//Super Edges are for the balanced separator algorithm
+			if (Super != nullptr) {
+				Hypertree* root = (*it)->findNodeByLambda(Super);
+				if (root != nullptr) {
+					root->setRoot();
+					for (Hypertree* child : root->allChildren())
+						HTree->insChild(child);
+					root->remChildren();
+					delete root;
+				}
+				else
+					writeErrorMsg("Superedge not found in the subtree.", "BalKDecomp::getHTNode");
+			}
+			else
+				HTree->insChild(*it);
+
+	return HTree;
 }
 
 

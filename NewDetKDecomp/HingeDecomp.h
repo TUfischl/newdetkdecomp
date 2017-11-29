@@ -27,12 +27,22 @@ private:
 	void decomp(Hingetree **hinge);
 	void decomp() { decomp(&MyHinge); };
 
+	Hypertree* buildHypertree(Hingetree *hinge);
+
 public:
-	HingeDecomp(Hypergraph *hg) : Decomp(hg) { }
+	HingeDecomp(Hypergraph *hg, int k) : Decomp(hg, k) { }
 	~HingeDecomp();
 
 	// Constructs a hinge decomposition of HGraph
 	Hingetree *buildHingetree();
+
+	virtual Hypertree *buildHypertree() {
+		if (MyHinge == nullptr)
+			writeErrorMsg("No Hingetree built!", "HingeDecomp::buildHypertree");
+
+		return buildHypertree(MyHinge);
+	}
+	
 };
 
 #endif
