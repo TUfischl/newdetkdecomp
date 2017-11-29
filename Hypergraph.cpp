@@ -20,10 +20,12 @@ Hypergraph::Hypergraph()
 
 Hypergraph::~Hypergraph()
 {
-	for (auto e : MyEdges)
-		delete e;
-	for (auto v : MyVertices)
-		delete v;
+	if (MyParent == nullptr) {
+		for (auto e : MyEdges)
+			delete e;
+		for (auto v : MyVertices)
+			delete v;
+	}
 }
 
 void Hypergraph::buildHypergraph(Parser * P)
@@ -85,6 +87,9 @@ void Hypergraph::insertEdge(Hyperedge * edge)
 		writeErrorMsg("This hypergraph already contains a Hyperedge with id " + to_string(edge->getId()), "Hypergraph::insertEdge");
 
 	MyEdges.push_back(edge);
+
+	if (edge->isHeavy())
+		MyCntHeavy++;
 
 	for (auto v : edge->allVertices()) {
 		if (find(MyVertices.begin(), MyVertices.end(), v) == MyVertices.end())

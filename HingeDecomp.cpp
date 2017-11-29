@@ -1,7 +1,9 @@
 #include "HingeDecomp.h"
 #include "Hypergraph.h"
+#include "Hypertree.h"
 #include "Hingetree.h"
 #include "Vertex.h"
+#include "DetKDecomp.h"
 
 HingeDecomp::~HingeDecomp()
 {
@@ -22,11 +24,49 @@ Hingetree * HingeDecomp::buildHingetree()
 	return MyHinge;
 }
 
+Hypertree * HingeDecomp::buildHypertree(Hingetree *hinge)
+{
+	Hypertree *htree{ nullptr };
+
+	//Build a hypergraph from current hinge
+	Hypergraph hg_hinge;
+	hg_hinge.setParent(MyHg);
+	for (auto he : hinge->allEdges())
+		hg_hinge.insertEdge(he);
+
+	DetKDecomp *decomp = new DetKDecomp(&hg_hinge, MyK, true);
+
+	htree = decomp->buildHypertree();
+
+	delete decomp;
+
+	// Expand pruned hypertree nodes
+	if (htree != nullptr) {
+		//Build hypertrees for child nodes
+		for (list<Hingeedge*>::const_iterator it = hinge->getChildren().begin(); it != hinge->getChildren().end() && htree != nullptr; it++) {
+			Hypertree *child = buildHypertree((*it)->dest);
+			if (child != nullptr) {
+				//Insert child into HTree
+				Hypertree *childRoot = child->findCoverNode((*it)->label);
+				Hypertree *childParent = child->findCoverNode((*it)->label);
+				childRoot->setRoot();
+				childParent->insChild(childRoot);
+			}
+			else {
+				delete htree;
+				htree = nullptr;
+			}
+		}
+	}
+
+	return htree;
+}
+
 void HingeDecomp::decomp(Hingetree ** hinge)
 {
 	Hyperedge* e{ nullptr };
-	vector<VE_VEC*> connectors{ nullptr };
-	vector<HE_VEC*> partitions{ nullptr };
+	vector<VE_VEC*> connectors;
+	vector<HE_VEC*> partitions;
 	//HE_VEC *edges;
 	int parts;
 

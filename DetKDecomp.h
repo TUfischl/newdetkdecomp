@@ -14,12 +14,9 @@ class Hypertree;
 class Vertex;
 class Subedges;
 
-class DetKDecomp : Decomp
+class DetKDecomp : public Decomp
 {
-private:
-	// Maximum separator size
-	int MyK;
-
+protected:
 	// Separator component already checked without success
 	list<HE_VEC*> MySeps;
 
@@ -34,16 +31,13 @@ private:
 	Subedges *MySubedges{ nullptr };
 
 	// Initializes a Boolean array representing a subset selection
-	int setInitSubset(VE_VEC *Vertices, HE_VEC &Edges,  vector<int> &Set, vector<bool> &InComp, vector<int> &CovWeights);
+	virtual int setInitSubset(VE_VEC *Vertices, HE_VEC &Edges,  vector<int> &Set, vector<bool> &InComp, vector<int> &CovWeights);
 
 	// Selects the next subset in a Boolean array representing a subset selection
-	int setNextSubset(VE_VEC *Vertices, HE_VEC &Edges, vector<int> &Set, vector<bool> &InComp, vector<int> &CovWeights);
+	virtual int setNextSubset(VE_VEC *Vertices, HE_VEC &Edges, vector<int> &Set, vector<bool> &InComp, vector<int> &CovWeights);
 
 	// Covers a set of nodes by a set of edges
 	int coverNodes(HE_VEC &Edges, vector<int> &Set, vector<bool> &InComp, vector<int> &CovWeights, int Uncovered, bool Reconstr);
-
-	// Creates a hypertree node
-	Hypertree *getHTNode(HE_VEC *HEdges, VE_VEC *ChiConnect, list<Hypertree *> *Subtrees);
 
 	// Orders hyperedges according to maximum cardinality search
 	//void orderMCS(Hyperedge **HEdges, int iNbrOfEdges);
@@ -64,7 +58,7 @@ private:
 	bool covers(HE_VEC *Edges, VE_VEC *Vertices);
 
 	// Builds a hypertree decomposition according to k-decomp by covering connector nodes
-	Hypertree *decomp(HE_VEC *HEdges, VE_VEC *Connector, int RecLevel);
+	virtual Hypertree *decomp(HE_VEC *HEdges, VE_VEC *Connector, int RecLevel);
 
 	// Expands cut hypertree nodes
 	void expandHTree(Hypertree *HTree);
@@ -77,7 +71,7 @@ public:
 	virtual ~DetKDecomp();
 
 	// Constructs a hypertree decomposition of width at most MyK (if it exists)
-	Hypertree *buildHypertree();
+	virtual Hypertree *buildHypertree();
 };
 
 

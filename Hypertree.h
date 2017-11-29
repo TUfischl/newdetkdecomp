@@ -115,7 +115,7 @@ public:
 	bool remChild(Hypertree *Child);
 
 	// Removes all pointers to children
-	void remChildren();
+	void remChildren(bool SetParent = true, Hypertree *NewParent = nullptr);
 	
 	// Inserts a pointer into the pointer set;
 	// these pointers can be used for the construction of hypertrees
@@ -171,6 +171,11 @@ public:
 		return make_iterable(MyLambda.begin(), MyLambda.end());
 	}
 
+	// Returns all children
+	auto allChildren() -> decltype(make_iterable(MyChildren.begin(), MyChildren.end())) {
+		return make_iterable(MyChildren.begin(), MyChildren.end());
+	}
+
 	// Sets the label of the hypertree-node
 	void setLabel(int iLabel);
 
@@ -213,6 +218,9 @@ public:
 
 	// Finds the first node in the hypertree that covers the hyperedge
 	Hypertree* findCoverNode(Hyperedge *edge);
+
+	// Finds the first node in the hypertree that has *edge in the Lambda label
+	Hypertree* findNodeByLambda(Hyperedge *edge);
 
 	// Checks hypertree condition 1
 	Hyperedge *checkCond1(Hypergraph *HGraph);
