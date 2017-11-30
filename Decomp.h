@@ -4,6 +4,8 @@
 #if !defined(CLS_Decomp)
 #define CLS_Decomp
 
+#include <list>
+
 #include "Globals.h"
 
 class Hypergraph;

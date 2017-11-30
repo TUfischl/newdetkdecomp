@@ -1,6 +1,11 @@
+
+#include <list>
+
 #include "Subedges.h"
 #include "Hypergraph.h"
 #include "CombinationIterator.h"
+
+
 
 list<Hyperedge *> AllSubedges;
 int iSub{ 0 };

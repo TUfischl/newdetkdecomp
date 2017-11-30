@@ -50,8 +50,8 @@ int Decomp::separate(HE_VEC *HEdges, vector<HE_VEC*> &Partitions, vector<VE_VEC*
 Hypertree * Decomp::decompTrivial(HE_VEC * HEdges, VE_VEC * Connector)
 {
 	Hypertree *htree{ nullptr };
-	auto cnt_edges{ HEdges->size() };
-	auto total_gravity{ totalGravity(*HEdges) };
+	size_t cnt_edges{ HEdges->size() };
+	int total_gravity{ totalGravity(*HEdges) };
 	
 	// Stop if the hypergraph can be decomposed into a single hypertree-node
 	if (total_gravity <= MyK) {

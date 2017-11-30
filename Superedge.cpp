@@ -1,3 +1,5 @@
+#include <list>
+
 #include "Superedge.h"
 
 list<Superedge *> MySuperedges;
