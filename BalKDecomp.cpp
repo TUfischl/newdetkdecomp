@@ -18,7 +18,7 @@ Hypergraph *BalKDecomp::MyBaseGraph{ nullptr };
 Hypertree * BalKDecomp::decomp(HE_VEC & Edges)
 {
 	int nbr_parts;
-	vector<HE_VEC*> bal_seps;
+	list<HE_VEC*> bal_seps;
 	unordered_set<Superedge *> checked;
 	vector<HE_VEC*> partitions;
 	vector<VE_VEC*> connectors;
@@ -70,6 +70,8 @@ Hypertree * BalKDecomp::decomp(HE_VEC & Edges)
 				//Now try to decompose 
 				if ((htree = decompose(sep, sep_edge, partitions)) == nullptr)
 					bal_seps.push_back(sep);
+				else
+					delete sep;
 			}
 			else
 				delete sep;
@@ -86,8 +88,16 @@ Hypertree * BalKDecomp::decomp(HE_VEC & Edges)
 	}
 
 	if (htree == nullptr) {
+		/*
+		SubedgeSeparatorFactory sub_sep_fac;
 		// All separators failed, try subedge separators
+		while (!bal_seps.empty() && htree == nullptr) {
+			sep = bal_seps.back();
+			bal_seps.pop_back();
 
+			sub_sep_fac.init(MyHg, &Edges, sep, G_Subedges);
+		}
+		*/
 	}
 
 	return htree;

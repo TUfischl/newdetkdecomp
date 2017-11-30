@@ -138,6 +138,7 @@ using namespace std;
 #include "Hingetree.h"
 #include "HingeDecomp.h"
 #include "BalKDecomp.h"
+#include "Subedges.h"
 
 void usage(int, char **, int *, bool *);
 Hypertree *decompK(Hypergraph *, int);
@@ -286,7 +287,104 @@ Hypertree *decompK(Hypergraph *HG, int iWidth)
 	return HT;
 }*/
 
+/*
+//Samer
+Hypertree *decompK(Hypergraph *HG, int iWidth)
+{
+	time_t start, end;
+	Hypertree *HT;
+	DetKDecomp Decomp(HG, iWidth, false);
 
+	// Apply the decomposition algorithm
+	cout << "Building hypertree (det-" << iWidth << "-decomp) ... " << endl;
+	time(&start);
+	HT = Decomp.buildHypertree();
+	time(&end);
+	if (HT == NULL)
+		cout << "Hypertree of width " << iWidth << " not found in " << difftime(end, start) << " sec." << endl << endl;
+	else {
+		cout << "Building hypertree done in " << difftime(end, start) << " sec";
+		cout << " (hypertree-width: " << HT->getHTreeWidth() << ")." << endl << endl;
+
+		HT->shrink(false);
+	}
+
+	return HT;
+}
+*/
+
+
+
+//LocalBIP
+Hypertree *decompK(Hypergraph *HG, int iWidth)
+{
+	time_t start, end;
+	Hypertree *HT;
+	DetKDecomp Decomp(HG, iWidth, true);
+
+	// Apply the decomposition algorithm
+	cout << "Building hypertree (det-" << iWidth << "-decomp) ... " << endl;
+	time(&start);
+	HT = Decomp.buildHypertree();
+	time(&end);
+	if (HT == NULL)
+		cout << "Hypertree of width " << iWidth << " not found in " << difftime(end, start) << " sec." << endl << endl;
+	else {
+		cout << "Building hypertree done in " << difftime(end, start) << " sec";
+		cout << " (hypertree-width: " << HT->getHTreeWidth() << ")." << endl << endl;
+
+		HT->shrink(false);
+	}
+
+	return HT;
+}
+
+
+/*
+//GlobalBIP
+Hypertree *decompK(Hypergraph *HG, int iWidth)
+{
+time_t start, end;
+Hypertree *HT;
+DetKDecomp Decomp(HG, iWidth, false);
+Subedges subs(HG,iWidth);
+HE_SET edges;
+
+cout << "Adding subedges ... " << endl;
+time(&start);
+// Add Subedges
+for (auto e : HG->allEdges())
+    for (auto sub : *(subs.getSubedges(e)))
+		edges.insert(sub);
+
+for (auto e : edges)
+HG->insertEdge(e);
+time(&end);
+cout << edges.size() << " subedges added in " << difftime(end, start) << " sec." << endl << endl;
+
+
+// Apply the decomposition algorithm
+cout << "Building hypertree (det-" << iWidth << "-decomp) ... " << endl;
+time(&start);
+HT = Decomp.buildHypertree();
+time(&end);
+if (HT == NULL)
+cout << "Hypertree of width " << iWidth << " not found in " << difftime(end, start) << " sec." << endl << endl;
+else {
+cout << "Building hypertree done in " << difftime(end, start) << " sec";
+cout << " (hypertree-width: " << HT->getHTreeWidth() << ")." << endl << endl;
+
+HT->shrink(false);
+}
+
+return HT;
+}
+
+*/
+
+
+/*
+//BalSeparator
 Hypertree *decompK(Hypergraph *HG, int iWidth)
 {
 	time_t start, end;
@@ -310,11 +408,11 @@ Hypertree *decompK(Hypergraph *HG, int iWidth)
 
 	return HT;
 }
-
+*/
 
 
 /*
-
+//With HingeDecomp
 Hypertree *decompK(Hypergraph *HG, int iWidth)
 {
 	time_t start, end;

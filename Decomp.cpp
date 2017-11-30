@@ -142,13 +142,13 @@ Hypertree *Decomp::getHTNode(HE_VEC *HEdges, VE_VEC *ChiConnect, list<Hypertree 
 	// Insert hyperedges and nodes into the hypertree-node
 	for (auto it = HEdges->cbegin(); it != HEdges->cend(); it++) {
 		HTree->insLambda(*it);
-		//if ((*it)->getLabel() == -1)
+		if ((*it)->getLabel() == -1)
 			for (auto v : (*it)->allVertices())
 				HTree->insChi(v);
 	}
 
 	if (ChiConnect != nullptr)
-		// Insert additional chi-labels to guarantee connectedness
+		// Insert additional chi-labels to guarantee 
 		for (auto it = ChiConnect->cbegin(); it != ChiConnect->cend(); it++)
 			HTree->insChi(*it);
 
