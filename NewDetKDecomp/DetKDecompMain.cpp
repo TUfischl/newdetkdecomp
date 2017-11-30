@@ -314,7 +314,7 @@ Hypertree *decompK(Hypergraph *HG, int iWidth)
 */
 
 
-
+/*
 //LocalBIP
 Hypertree *decompK(Hypergraph *HG, int iWidth)
 {
@@ -338,9 +338,9 @@ Hypertree *decompK(Hypergraph *HG, int iWidth)
 
 	return HT;
 }
+*/
 
 
-/*
 //GlobalBIP
 Hypertree *decompK(Hypergraph *HG, int iWidth)
 {
@@ -380,7 +380,7 @@ HT->shrink(false);
 return HT;
 }
 
-*/
+
 
 
 /*

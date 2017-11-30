@@ -7,7 +7,7 @@
 #if !defined(CLS_HYPEREDGE)
 #define CLS_HYPEREDGE
 
-
+#include <iostream>
 #include <string>
 #include <vector>
 #include <unordered_set>
