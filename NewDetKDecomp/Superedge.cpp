@@ -7,11 +7,15 @@ list<Superedge *> MySuperedges;
 
 void Superedge::add(Hyperedge *e)
 {
-	MyEdges.insert(e);
-	for (auto v : e->allVertices())
-		Hyperedge::add(v);
+	if (!e->isHeavy()) {
+		MyEdges.insert(e);
+		for (auto v : e->allVertices())
+			Hyperedge::add(v);
 
-	MyGravity++;
+		MyGravity++;
+	}
+	else
+		writeErrorMsg("Superedges only from normal edges.", "Superedge::add");
 }
 
 Superedge * Superedge::getSuperedge(HE_VEC * Edges)
@@ -21,8 +25,10 @@ Superedge * Superedge::getSuperedge(HE_VEC * Edges)
 	bool found;
 
 	for (auto he : *Edges)
-		for (auto v : he->allVertices())
+		for (auto v : he->allVertices()) {
 			vertices.insert(v);
+			v->setLabel(-1);
+		}
 
 	for (auto se : MySuperedges)
 		if (se->getNbrOfVertices() == vertices.size()) {

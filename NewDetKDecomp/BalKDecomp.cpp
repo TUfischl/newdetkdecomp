@@ -10,9 +10,8 @@
 #include "SubedgeSeparatorFactory.h"
 
 
-Subedges* G_Subedges{ nullptr };
 int BalKDecomp::MyMaxRecursion{ 0 };
-Hypergraph *BalKDecomp::MyBaseGraph{ nullptr }; 
+Hypergraph *BalKDecomp::MyBaseGraph{ nullptr };
 
 
 Hypertree * BalKDecomp::decomp(HE_VEC & Edges)
@@ -40,10 +39,10 @@ Hypertree * BalKDecomp::decomp(HE_VEC & Edges)
 	sep_edges = getNeighborEdges(Edges);
 
 	CombinationIterator comb(sep_edges.size(), MyK);
-	comb.setStage(MyK);		
+	comb.setStage(MyK);
 
 	// Find balanced separators
-	while ((indices = comb.next()) != nullptr && htree==nullptr) {
+	while ((indices = comb.next()) != nullptr && htree == nullptr) {
 		MyHg->resetEdgeLabels();
 		MyHg->resetVertexLabels();
 
@@ -88,16 +87,66 @@ Hypertree * BalKDecomp::decomp(HE_VEC & Edges)
 	}
 
 	if (htree == nullptr) {
-		/*
-		SubedgeSeparatorFactory sub_sep_fac;
+
+		
+		HE_VEC *sub_separator;
 		// All separators failed, try subedge separators
 		while (!bal_seps.empty() && htree == nullptr) {
+			SubedgeSeparatorFactory sub_sep_fac;
+			
 			sep = bal_seps.back();
 			bal_seps.pop_back();
 
-			sub_sep_fac.init(MyHg, &Edges, sep, G_Subedges);
+			sub_sep_fac.init(MyHg, &Edges, sep, MySubedges);
+
+			while (htree == nullptr && (sub_separator = sub_sep_fac.next()) != nullptr) {
+				MyHg->resetEdgeLabels();
+				MyHg->resetVertexLabels();
+
+				for (auto he : *sub_separator)
+					he->labelAll(-1);
+
+				sep_edge = Superedge::getSuperedge(sub_separator);
+
+				// super edge must be new and
+				// super edge from separator must not be part of current component
+				if (checked.find(sep_edge) == checked.end() &&
+					(MyHg->getNbrOfHeavyEdges() == 0 || find(Edges.begin(), Edges.end(), sep_edge) == Edges.end())) {
+
+					checked.insert(sep_edge);
+
+					nbr_parts = separate(&Edges, partitions, connectors);
+
+					if (isBalanced(partitions, Edges.size())) {
+						//Now try to decompose 
+						if ((htree = decompose(sub_separator, sep_edge, partitions)) != nullptr)
+							delete sub_separator;
+					}
+					else
+						delete sub_separator;
+
+					for (auto part : partitions)
+						delete part;
+					partitions.clear();
+					for (auto conn : connectors)
+						delete conn;
+					connectors.clear();
+				}
+				else
+					delete sub_separator;
+			}
+
+			if (htree == nullptr)
+				delete sep;
 		}
-		*/
+	}
+
+	if (htree != nullptr) {
+		VE_SET vertices;
+		for (auto he : Edges)
+			for (auto v : he->allVertices())
+				vertices.insert(v);
+		htree->reduceChi(vertices);
 	}
 
 	return htree;
@@ -131,6 +180,9 @@ Hypertree * BalKDecomp::decompose(HE_VEC *Sep, Superedge *Sup, vector<HE_VEC*>& 
 	}
 
 	if (htree != nullptr) {
+		for (auto e : *Sep)
+			e->labelAll(-1);
+
 		htree = getHTNode(Sep, nullptr, &subtrees, Sup);
 		
 	}
@@ -179,16 +231,12 @@ bool BalKDecomp::isBalanced(vector<HE_VEC*>& Parts, int CompSize)
 
 BalKDecomp::BalKDecomp(Hypergraph *HGraph, int k, int RecLevel) : Decomp(HGraph, k), MyRecLevel{ RecLevel }
 {
-	if (G_Subedges == nullptr)
-		G_Subedges = new Subedges(HGraph, k);
+	MySubedges = new Subedges(HGraph, k);
 }
 
 BalKDecomp::~BalKDecomp()
 {
-	if (G_Subedges != nullptr) {
-		delete G_Subedges;
-		G_Subedges = nullptr;
-	}
+	delete MySubedges;
 }
 
 Hypertree * BalKDecomp::buildHypertree()

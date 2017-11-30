@@ -16,10 +16,11 @@ class BalKDecomp :
 {
 private:
 	int MyRecLevel;
+	Subedges *MySubedges;
 
 	Hypertree *decomp(HE_VEC &HEdges);
 	Hypertree *decompose(HE_VEC *Sep, Superedge *Sup, vector<HE_VEC*> &Parts);
-
+	
 	HE_VEC getNeighborEdges(HE_VEC &Edges);
 
 	bool isBalanced(vector<HE_VEC*> &Parts, int CompSize);

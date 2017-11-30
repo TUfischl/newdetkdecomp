@@ -70,6 +70,8 @@ public:
 		return make_iterable(MyVertices.begin(), MyVertices.end());
 	}
 
+	//const VE_SET &getVertices() { return MyVertices;  }
+
 	uint isHeavy() { return MyGravity > 1; }
 	uint getGravity() { return MyGravity; }
 

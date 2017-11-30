@@ -763,6 +763,15 @@ bool Hypertree::isCyclic()
 	return isCyclic_pvt();
 }
 
+void Hypertree::reduceChi(const VE_SET &vertices)
+{
+	for (auto it = MyChi.begin(); it != MyChi.end(); )
+		if (vertices.find(*it) == vertices.end())
+			it = MyChi.erase(it);
+		else
+			it++;
+}
+
 
 void Hypertree::shrinkByLambda()
 {
