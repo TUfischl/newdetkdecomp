@@ -703,8 +703,10 @@ Hypertree *DetKDecomp::decomp(HE_VEC *HEdges, VE_VEC *Connector, int RecLevel)
 							while (!found && (sub_separator = sub_sep_fac.next()) != nullptr) {
 								found = true;
 								//Check if new sub_separator still covers all connector nodes
-								if (!covers(sub_separator, Connector))
+								if (!covers(sub_separator, Connector)) {
 									found = false;
+									delete sub_separator;
+								}
 							} 
 
 							// All subedge separators tried

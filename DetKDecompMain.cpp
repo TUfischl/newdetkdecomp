@@ -162,10 +162,10 @@ int main(int argc, char **argv)
 
 	// Check command line arguments and initialize random number generator
 	usage(argc, argv, &K, &bDef);
-	//srand(100);
-	srand((unsigned int)time(NULL));
-	iRandomInit = random_range(999, 9999);
-	for (int i = 0; i < iRandomInit; i++) rand();
+	srand(100);
+	//srand((unsigned int)time(NULL));
+	//iRandomInit = random_range(999, 9999);
+	//for (int i = 0; i < iRandomInit; i++) rand();
 
 	// Create parser object
 	if ((P = new Parser(bDef)) == NULL)
@@ -340,7 +340,7 @@ Hypertree *decompK(Hypergraph *HG, int iWidth)
 }
 */
 
-
+/*
 //GlobalBIP
 Hypertree *decompK(Hypergraph *HG, int iWidth)
 {
@@ -379,18 +379,18 @@ HT->shrink(false);
 
 return HT;
 }
+*/
 
 
 
 
-/*
 //BalSeparator
 Hypertree *decompK(Hypergraph *HG, int iWidth)
 {
 	time_t start, end;
 	Hypertree *HT;
 	BalKDecomp Decomp(HG, iWidth);
-	BalKDecomp::init(HG, 1);
+	BalKDecomp::init(HG, 0);
 
 	// Apply the decomposition algorithm
 	cout << "Building hypertree (det-" << iWidth << "-decomp) ... " << endl;
@@ -403,12 +403,12 @@ Hypertree *decompK(Hypergraph *HG, int iWidth)
 		cout << "Building hypertree done in " << difftime(end, start) << " sec";
 		cout << " (hypertree-width: " << HT->getHTreeWidth() << ")." << endl << endl;
 
-		HT->shrink(false);
+		//HT->shrink(false);
 	}
 
 	return HT;
 }
-*/
+
 
 
 /*

@@ -95,8 +95,10 @@ Hypertree * Decomp::decompTrivial(HE_VEC * HEdges, VE_VEC * Connector)
 
 				// put all other edges into the first bag
 				for (auto he : *HEdges)
-					if (he != heavy)
+					if (he != heavy) {
 						part.push_back(he);
+						he->setLabel(-1);
+					}
 				
 				// create htree node
 				htree = getHTNode(&part);
@@ -162,7 +164,7 @@ Hypertree *Decomp::getHTNode(HE_VEC *HEdges, VE_VEC *ChiConnect, list<Hypertree 
 					root->setRoot();
 					for (Hypertree* child : root->allChildren())
 						HTree->insChild(child);
-					root->remChildren();
+					root->remChildren(false);
 					delete root;
 				}
 				else

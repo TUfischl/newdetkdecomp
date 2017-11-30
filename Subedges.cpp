@@ -23,18 +23,20 @@ HE_VEC* Subedges::getSubedges(Hyperedge *he)
 	
 	if (entry == MySubedges.end()) {
 		//Generate all subedges of he and store in MySubedges
-		int i{ 0 }, n{ MyHg->nbrOfEdgeNeighbors(he) }, k{ MyK };
+		int i{ 0 }, n, k{ MyK };
 		HE_VEC* sub_edges = new HE_VEC();
-		HE_VEC neighbors(n);
+		HE_VEC neighbors;
 		VE_SET new_vertices;
 		Hyperedge *new_edge;
 		int *indices;
 
 		for (auto e : MyHg->allEdgeNeighbors(he))
-			neighbors[i++] = e;
+			if (!e->isHeavy())
+			   neighbors.push_back(e);
+		n = neighbors.size();
 		if (n < k) k = n;
 
-		if (neighbors.size() == 0)
+		if (n == 0)
 			return (MySubedges[he] = sub_edges);
 
 		MyHg->resetVertexLabels();
