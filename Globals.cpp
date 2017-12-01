@@ -116,6 +116,19 @@ std::ostream & operator<<(std::ostream & out, const HE_VEC & he)
 	return out;
 }
 
+std::ostream & operator<<(std::ostream & out, const VE_SET & v)
+{
+	out << "(";
+	for (auto it = v.cbegin(); it != v.cend();) {
+		out << (*it)->getName();
+		if (++it != v.cend())
+			out << ",";
+	}
+	out << ")";
+
+	return out;
+}
+
 
 bool isSubset(HE_SET &Set1, HE_SET &Set2)
 {

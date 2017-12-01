@@ -192,7 +192,7 @@ public:
 	bool isCyclic();
 
 	// Removes vertices from Chi not in parameter vertices
-	void reduceChi(const VE_SET &vertices);
+	void reduceChi(VE_SET *vertices);
 
 
 	// Removes redundant nodes (default compares Chi-Labels, else compares Lambda-Labels)

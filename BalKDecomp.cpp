@@ -26,6 +26,7 @@ Hypertree * BalKDecomp::decomp(HE_VEC & Edges)
 	int *indices;
 	HE_VEC sep_edges; //Edges to consider for the separator
 	Superedge *sep_edge;
+	VE_SET vertices;
 
 	if ((htree = decompTrivial(&Edges, nullptr)) != nullptr)
 		return htree;
@@ -41,6 +42,12 @@ Hypertree * BalKDecomp::decomp(HE_VEC & Edges)
 	CombinationIterator comb(sep_edges.size(), MyK);
 	comb.setStage(MyK);
 
+	for (auto he : Edges)
+		for (auto v : he->allVertices())
+			vertices.insert(v);
+
+	//cout << "Decomposing: " << vertices << endl;
+
 	// Find balanced separators
 	while ((indices = comb.next()) != nullptr && htree == nullptr) {
 		MyHg->resetEdgeLabels();
@@ -54,7 +61,7 @@ Hypertree * BalKDecomp::decomp(HE_VEC & Edges)
 			sep->push_back(he);
 		}
 
-		sep_edge = Superedge::getSuperedge(sep);
+		sep_edge = Superedge::getSuperedge(sep,&vertices);
 
 		// super edge must be new and
 		// super edge from separator must not be part of current component
@@ -106,7 +113,7 @@ Hypertree * BalKDecomp::decomp(HE_VEC & Edges)
 				for (auto he : *sub_separator)
 					he->labelAll(-1);
 
-				sep_edge = Superedge::getSuperedge(sub_separator);
+				sep_edge = Superedge::getSuperedge(sub_separator,&vertices);
 
 				// super edge must be new and
 				// super edge from separator must not be part of current component
@@ -141,13 +148,8 @@ Hypertree * BalKDecomp::decomp(HE_VEC & Edges)
 		}
 	}
 
-	if (htree != nullptr) {
-		VE_SET vertices;
-		for (auto he : Edges)
-			for (auto v : he->allVertices())
-				vertices.insert(v);
-		htree->reduceChi(vertices);
-	}
+	//if (htree != nullptr)
+	//	htree->reduceChi(&vertices);
 
 	return htree;
 }
@@ -183,6 +185,12 @@ Hypertree * BalKDecomp::decompose(HE_VEC *Sep, Superedge *Sup, vector<HE_VEC*>& 
 		for (auto e : *Sep)
 			e->labelAll(-1);
 
+		/*
+		for (int i = 0; i < MyRecLevel; i++)
+			cout << "+";
+		cout << " " << *Sep << ": " << *Sup  << endl;
+		*/
+
 		htree = getHTNode(Sep, nullptr, &subtrees, Sup);
 		
 	}
@@ -206,12 +214,13 @@ HE_VEC BalKDecomp::getNeighborEdges(HE_VEC & Edges)
 	}
 
 	for (auto v : MyBaseGraph->allVertices())
-		if (v->getLabel()==1)
+		if (v->getLabel() == 1) {
 			for (auto he : MyBaseGraph->allVertexNeighbors(v))
 				if (he->getLabel() == 0) {
 					he->setLabel(1);
 					neighbors.push_back(he);
 				}
+		}
 
 	return neighbors;
 }
