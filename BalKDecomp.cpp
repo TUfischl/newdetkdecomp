@@ -27,6 +27,7 @@ Hypertree * BalKDecomp::decomp(HE_VEC & Edges)
 	HE_VEC sep_edges; //Edges to consider for the separator
 	Superedge *sep_edge;
 	VE_SET vertices;
+	int cnt_bal{ 0 };
 
 	if ((htree = decompTrivial(&Edges, nullptr)) != nullptr)
 		return htree;
@@ -73,6 +74,7 @@ Hypertree * BalKDecomp::decomp(HE_VEC & Edges)
 			nbr_parts = separate(&Edges, partitions, connectors);
 
 			if (isBalanced(partitions, Edges.size())) {
+				cnt_bal++;
 				//Now try to decompose 
 				if ((htree = decompose(sep, sep_edge, partitions)) == nullptr)
 					bal_seps.push_back(sep);
@@ -150,6 +152,9 @@ Hypertree * BalKDecomp::decomp(HE_VEC & Edges)
 
 	//if (htree != nullptr)
 	//	htree->reduceChi(&vertices);
+
+	if (MyRecLevel == 0)
+		cout << cnt_bal << " balanced separators tried." << endl;
 
 	return htree;
 }
