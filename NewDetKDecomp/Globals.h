@@ -41,6 +41,10 @@ char *uitoa(unsigned int iNumber, char *cString);
 // Outputs a set of hyperedges
 std::ostream& operator<< (std::ostream &out, const HE_VEC &he);
 
+// Outputs a set of vertices
+std::ostream& operator<< (std::ostream &out, const VE_SET &v);
+
+
 template<class T>
 struct Iterable
 {

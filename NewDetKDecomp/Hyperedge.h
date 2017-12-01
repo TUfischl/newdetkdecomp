@@ -25,10 +25,9 @@ using namespace std;
 #pragma once
 class Hyperedge : public Component
 {
-private:
-	VE_SET MyVertices;
 
 protected:
+	VE_SET MyVertices;
 	uint MyGravity{ 1 };
 
 public:

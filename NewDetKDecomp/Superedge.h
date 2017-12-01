@@ -33,9 +33,14 @@ public:
 		MyGravity = 0;
 	}
 
-	void add(Hyperedge *e);
+	void add(HE_VEC *Edges, VE_SET *Vertices);
 
-	static Superedge *getSuperedge(HE_VEC *Edges);
+	// Removes Vertices from this edge that are not in vertices
+	void reduce(VE_SET *vertices);
+
+	static Superedge *getSuperedge(HE_VEC *Edges, VE_SET *VetComp);
+
+
 
 	~Superedge();
 };

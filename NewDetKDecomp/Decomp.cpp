@@ -146,7 +146,8 @@ Hypertree *Decomp::getHTNode(HE_VEC *HEdges, VE_VEC *ChiConnect, list<Hypertree 
 		HTree->insLambda(*it);
 		if ((*it)->getLabel() == -1)
 			for (auto v : (*it)->allVertices())
-				HTree->insChi(v);
+				if (Super == nullptr || Super->find(v) != nullptr)
+					HTree->insChi(v);
 	}
 
 	if (ChiConnect != nullptr)
