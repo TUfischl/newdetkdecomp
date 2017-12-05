@@ -44,6 +44,15 @@ void Hypergraph::buildHypergraph(Parser * P)
 	}
 }
 
+bool Hypergraph::hasAllEdges(HE_VEC * edges)
+{
+	for (auto he : *edges)
+		if (!hasEdge(he))
+			return false;
+
+	return true;
+}
+
 Hyperedge * Hypergraph::getEdgeByID(int id)
 {
 	for (auto he : MyEdges)
@@ -72,28 +81,20 @@ void Hypergraph::resetVertexLabels(int val)
 		v->setLabel(val);
 }
 
-Hyperedge * Hypergraph::getEdgeById(int id)
-{
-	for (auto e : MyEdges)
-		if (e->getId() == id)
-			return e;
-	return nullptr;
-}
-
-
 void Hypergraph::insertEdge(Hyperedge * edge)
 {
-	if (getEdgeById(edge->getId()) != nullptr)
+	if (getEdgeByID(edge->getId()) != nullptr )
 		writeErrorMsg("This hypergraph already contains a Hyperedge with id " + to_string(edge->getId()), "Hypergraph::insertEdge");
 
-	MyEdges.push_back(edge);
+
+	MyEdges.insert(edge);
 
 	if (edge->isHeavy())
 		MyCntHeavy++;
 
 	for (auto v : edge->allVertices()) {
 		if (find(MyVertices.begin(), MyVertices.end(), v) == MyVertices.end())
-			MyVertices.push_back(v);
+			MyVertices.insert(v);
 		MyEdgeNeighbors[edge].insert(MyVertexNeighbors[v].cbegin(), MyVertexNeighbors[v].cend());
 		for (auto e : MyVertexNeighbors[v])
 			MyEdgeNeighbors[e].insert(edge);
@@ -106,7 +107,7 @@ bool Hypergraph::isConnected()
 	resetEdgeLabels();
 
 	if (getNbrOfEdges() > 0)
-		labelReachEdges(MyEdges[0]);
+		labelReachEdges(*MyEdges.begin());
 	
 	for (auto e : MyEdges)
 		if (e->getLabel() == 0)
@@ -137,7 +138,7 @@ HE_VEC Hypergraph::getMCSOrder()
 {
 	HE_VEC order;
 	HE_VEC candidates;
-	HE_VEC::iterator he_iter;
+	HE_SET::iterator he_iter;
 	uint max_card{ 0 };
 	uint tmp_card{ 0 };
 	
@@ -147,7 +148,9 @@ HE_VEC Hypergraph::getMCSOrder()
 	resetEdgeLabels();
 
 	//Select randomly an initial hyperedge
-	he = MyEdges[random_range(0, MyEdges.size() - 1)];
+	auto it = MyEdges.begin();
+	for (int i = 0; i < random_range(0, MyEdges.size() - 1); i++, it++);
+	he = *it;
 	he->setLabel(1);
 	order.push_back(he);
 	

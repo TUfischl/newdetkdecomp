@@ -11,14 +11,14 @@
 #include "Parser.h"
 
 class Hypergraph
-{
+{ 
 private:
 	// Stores a parent hypergraph (hence, this hypergraph is a subgraph/copy of another graph
 	// The desctructor then keeps edges and vertices
 	Hypergraph *MyParent{ nullptr };
 
-	vector<Hyperedge *> MyEdges;
-	vector<Vertex *> MyVertices;
+	HE_SET MyEdges;
+	VE_SET MyVertices;
 
 	unordered_map<Vertex *, HE_SET> MyVertexNeighbors;
 	unordered_map<Hyperedge *, HE_SET> MyEdgeNeighbors;
@@ -48,11 +48,16 @@ public:
 	// Returns the number of nodes in the hypergraph
 	size_t getNbrOfVertices() { return MyVertices.size();  }
 
+	// Returns true if hyperedge is stored in hypergraph
+	bool hasEdge(Hyperedge *he) { return MyEdges.find(he) != MyEdges.end(); }
+
+	bool hasAllEdges(HE_VEC *edges);
+
 	// Returns the hyperedge stored at position iPos
-	Hyperedge *getEdge(int pos) { return MyEdges[pos]; }
+	//Hyperedge *getEdge(int pos) { return MyEdges[pos]; }
 
 	// Returns the vertex stored at position iPos
-	Vertex *getVertex(int pos) { return MyVertices[pos]; }
+	//Vertex *getVertex(int pos) { return MyVertices[pos]; }
 
 	// Returns the hyperedge with ID iID
 	Hyperedge *getEdgeByID(int id);
@@ -65,9 +70,6 @@ public:
 
 	// Sets labels of all vertices to zero
 	void resetVertexLabels(int val = 0);
-
-	// Returns the hyperedge with id if stored in this hypergraph
-	Hyperedge* getEdgeById(int id);
 
 	// Inserts an hyperedge into the hypergraph
 	void insertEdge(Hyperedge* edge);

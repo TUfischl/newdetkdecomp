@@ -490,10 +490,12 @@ void Hypertree::outputToGML(Hypergraph *HGraph, char *cNameOfFile)
 	
 	// Set labels to write the output in a uniform order
 	setIDLabels();
-	for(i=0; i < HGraph->getNbrOfVertices(); i++)
-		HGraph->getVertex(i)->setLabel(i);
-	for(i=0; i < HGraph->getNbrOfEdges(); i++)
-		HGraph->getEdge(i)->setLabel(i);
+	i = 0;
+	for(auto v : HGraph->allVertices())
+		v->setLabel(i++);
+	i = 0;
+	for(auto e : HGraph->allEdges())
+		e->setLabel(i++);
 
 	GMLFile.open(cNameOfFile, ios::out);
 
@@ -981,19 +983,22 @@ void Hypertree::reduceLambda()
 
 void Hypertree::setChi(Hypergraph *HGraph, bool bStrict)
 {
-	int i;
+	int i = 0;
 	vector<Hypertree *> CovNodes(HGraph->getNbrOfEdges());
 
-	for(i=0; i < HGraph->getNbrOfEdges(); i++) {
-		HGraph->getEdge(i)->setLabel(i);
-		CovNodes[i] = nullptr;
+	for(auto e : HGraph->allEdges()) {
+		e->setLabel(i);
+		CovNodes[i++] = nullptr;
 	}
 
+	i = 0;
 	selCovHTNodes(CovNodes, bStrict);
-	for(i=0; i < HGraph->getNbrOfEdges(); i++)
-		if(CovNodes[i] != nullptr)
-			for(auto v : HGraph->getEdge(i)->allVertices())
+	for (auto e : HGraph->allEdges()) {
+		if (CovNodes[i] != nullptr)
+			for (auto v : e->allVertices())
 				CovNodes[i]->getChi()->insert(v);
+		i++;
+	}
 	
 	setChi_Conn(HGraph);
 }
@@ -1119,9 +1124,9 @@ Hyperedge *Hypertree::checkCond1(Hypergraph *HGraph)
 	labelCovEdges(HGraph);
 
 	// Search for hyperedges that are not labeled
-	for(int i=0; i < HGraph->getNbrOfEdges(); i++)
-		if(HGraph->getEdge(i)->getLabel() == 0)
-			return HGraph->getEdge(i);
+	for(auto e : HGraph->allEdges())
+		if(e->getLabel() == 0)
+			return e;
 
 	return nullptr;
 }
