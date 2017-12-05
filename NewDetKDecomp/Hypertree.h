@@ -89,6 +89,7 @@ private:
 public:
 	// Constructor
 	Hypertree(Hypergraph *Hg);
+	Hypertree(const Hypertree&);
 
 	// Destructor
 	virtual~Hypertree();

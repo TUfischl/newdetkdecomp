@@ -53,6 +53,15 @@ bool Hypergraph::hasAllEdges(HE_VEC * edges)
 	return true;
 }
 
+bool Hypergraph::hasAllEdges(HE_SET * edges)
+{
+	for (auto he : *edges)
+		if (!hasEdge(he))
+			return false;
+
+	return true;
+}
+
 Hyperedge * Hypergraph::getEdgeByID(int id)
 {
 	for (auto he : MyEdges)

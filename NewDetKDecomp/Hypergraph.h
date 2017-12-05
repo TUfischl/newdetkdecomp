@@ -51,6 +51,7 @@ public:
 	// Returns true if hyperedge is stored in hypergraph
 	bool hasEdge(Hyperedge *he) { return MyEdges.find(he) != MyEdges.end(); }
 
+	bool hasAllEdges(HE_SET *edges);
 	bool hasAllEdges(HE_VEC *edges);
 
 	// Returns the hyperedge stored at position iPos
