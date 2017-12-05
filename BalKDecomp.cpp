@@ -12,7 +12,8 @@
 
 int BalKDecomp::MyMaxRecursion{ 0 };
 Hypergraph *BalKDecomp::MyBaseGraph{ nullptr };
-
+list<Hypergraph *> BalKDecomp::sFailedHg;
+list<Hypergraph *> BalKDecomp::sSuccHg;
 
 Hypertree * BalKDecomp::decomp(HE_VEC & Edges)
 {
@@ -161,29 +162,40 @@ Hypertree * BalKDecomp::decomp(HE_VEC & Edges)
 
 Hypertree * BalKDecomp::decompose(HE_VEC *Sep, Superedge *Sup, vector<HE_VEC*>& Parts)
 {
-	Hypergraph *hg;
+	Hypergraph *hypergraph;
 	BalKDecomp *baldecomp;
 	Hypertree *htree{ nullptr };
 	list<Hypertree *> subtrees;
-
+	vector<Hypergraph *> hypergraphs;
+	vector<bool> v_succ;
+	bool succ;
+	bool failed = false;
 
 	for (auto part : Parts) {
-		hg = new Hypergraph();
-		hg->setParent(MyBaseGraph);
+		failed = getHypergraph(&hypergraph, &succ, part, Sup);
+		v_succ.push_back(succ);
 
-		for (auto he : *part)
-			hg->insertEdge(he);
-		hg->insertEdge(Sup);
-
-		baldecomp = new BalKDecomp(hg, MyK, MyRecLevel + 1);
-		htree = baldecomp->buildHypertree();
-		delete baldecomp;
-		delete hg;
-
-		if (htree == nullptr)
+		if (failed)
 			break;
 		else
-			subtrees.push_back(htree);
+			hypergraphs.push_back(hypergraph);
+	}
+
+	if (!failed) {
+		for (auto hg : hypergraphs) {
+			baldecomp = new BalKDecomp(hg, MyK, MyRecLevel + 1);
+			htree = baldecomp->buildHypertree();
+			delete baldecomp;
+
+			if (htree == nullptr) {
+				sFailedHg.push_back(hg);
+				break;
+			}
+			else {
+				sSuccHg.push_back(hg);
+				subtrees.push_back(htree);
+			}
+		}
 	}
 
 	if (htree != nullptr) {
@@ -251,6 +263,57 @@ BalKDecomp::BalKDecomp(Hypergraph *HGraph, int k, int RecLevel) : Decomp(HGraph,
 BalKDecomp::~BalKDecomp()
 {
 	delete MySubedges;
+}
+
+bool BalKDecomp::getHypergraph(Hypergraph ** Hg, bool * Succ, HE_VEC * Part, Hyperedge * Sup)
+{
+	size_t cnt = Part->size() + 1;
+
+	for (auto hg : sFailedHg) {
+		bool found = true;
+
+		if (hg->getNbrOfEdges() == cnt) {
+			if (!hg->hasEdge(Sup))
+				found = false;
+			if (found && !hg->hasAllEdges(Part))
+				found = false;
+		}
+		else
+			found = false;
+
+		if (found) {
+			*Hg = hg;
+			return true;
+		}
+	}
+
+	for (auto hg : sSuccHg) {
+		bool found = true;
+
+		if (hg->getNbrOfEdges() == cnt) {
+			if (!hg->hasEdge(Sup))
+				found = false;
+			if (found && !hg->hasAllEdges(Part))
+				found = false;
+		}
+		else
+			found = false;
+
+		if (found) {
+			*Hg = hg;
+			*Succ = true;
+			return false;
+		}
+	}
+
+	(*Hg) = new Hypergraph();
+	(*Hg)->setParent(MyBaseGraph);
+
+	for (auto he : *Part)
+		(*Hg)->insertEdge(he);
+	(*Hg)->insertEdge(Sup);
+	*Succ = false;
+	return false;
 }
 
 Hypertree * BalKDecomp::buildHypertree()

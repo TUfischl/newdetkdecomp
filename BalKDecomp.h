@@ -15,6 +15,9 @@ class BalKDecomp :
 	public Decomp
 {
 private:
+	static list<Hypergraph *> sFailedHg;
+	static list<Hypergraph *> sSuccHg;
+
 	int MyRecLevel;
 	Subedges *MySubedges;
 
@@ -32,6 +35,10 @@ public:
 
 	BalKDecomp(Hypergraph *HGraph, int k, int RecLevel = 0);
 	virtual ~BalKDecomp();
+
+	// Finds or constructs a hypergraph from a list of edges and a superedge
+	// Returns false if hypergraph is in sFailedHg
+	bool getHypergraph(Hypergraph **Hg, bool *Succ, HE_VEC *Part, Hyperedge *Sup);
 
 	// Constructs a hypertree decomposition of width at most MyK (if it exists)
 	virtual Hypertree *buildHypertree();
