@@ -5,6 +5,8 @@
 #if !defined(CLS_BalKDecomp)
 #define CLS_BalKDecomp
 
+#include <unordered_map>
+
 #include "Globals.h"
 #include "Decomp.h"
 
@@ -16,7 +18,7 @@ class BalKDecomp :
 {
 private:
 	static list<Hypergraph *> sFailedHg;
-	static list<Hypergraph *> sSuccHg;
+	static unordered_map<Hypergraph *, Hypertree *> sSuccHg;
 
 	int MyRecLevel;
 	Subedges *MySubedges;
@@ -27,7 +29,13 @@ private:
 	HE_VEC getNeighborEdges(HE_VEC &Edges);
 
 	bool isBalanced(vector<HE_VEC*> &Parts, int CompSize);
-		
+	
+	void expandHTree(Hypertree *HTree);
+	
+	// Finds or constructs a hypergraph from a list of edges and a superedge
+	// Returns false if hypergraph is in sFailedHg
+	template<typename T>
+	bool getHypergraph(Hypergraph **Hg, bool *Succ, T *Part, Hyperedge *Sup = nullptr);
 
 public:
 	static int MyMaxRecursion;
@@ -36,9 +44,7 @@ public:
 	BalKDecomp(Hypergraph *HGraph, int k, int RecLevel = 0);
 	virtual ~BalKDecomp();
 
-	// Finds or constructs a hypergraph from a list of edges and a superedge
-	// Returns false if hypergraph is in sFailedHg
-	bool getHypergraph(Hypergraph **Hg, bool *Succ, HE_VEC *Part, Hyperedge *Sup);
+	
 
 	// Constructs a hypertree decomposition of width at most MyK (if it exists)
 	virtual Hypertree *buildHypertree();

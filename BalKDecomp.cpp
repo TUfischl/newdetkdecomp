@@ -1,3 +1,5 @@
+#include <unordered_map>
+
 #include "Globals.h"
 #include "DetKDecomp.h"
 #include "BalKDecomp.h"
@@ -13,7 +15,7 @@
 int BalKDecomp::MyMaxRecursion{ 0 };
 Hypergraph *BalKDecomp::MyBaseGraph{ nullptr };
 list<Hypergraph *> BalKDecomp::sFailedHg;
-list<Hypergraph *> BalKDecomp::sSuccHg;
+unordered_map<Hypergraph *, Hypertree *> BalKDecomp::sSuccHg;
 
 Hypertree * BalKDecomp::decomp(HE_VEC & Edges)
 {
@@ -172,7 +174,7 @@ Hypertree * BalKDecomp::decompose(HE_VEC *Sep, Superedge *Sup, vector<HE_VEC*>& 
 	bool failed = false;
 
 	for (auto part : Parts) {
-		failed = getHypergraph(&hypergraph, &succ, part, Sup);
+		failed = getHypergraph<HE_VEC>(&hypergraph, &succ, part, Sup);
 		v_succ.push_back(succ);
 
 		if (failed)
@@ -182,19 +184,28 @@ Hypertree * BalKDecomp::decompose(HE_VEC *Sep, Superedge *Sup, vector<HE_VEC*>& 
 	}
 
 	if (!failed) {
+		int i = 0;
 		for (auto hg : hypergraphs) {
-			baldecomp = new BalKDecomp(hg, MyK, MyRecLevel + 1);
-			htree = baldecomp->buildHypertree();
-			delete baldecomp;
-
-			if (htree == nullptr) {
-				sFailedHg.push_back(hg);
-				break;
-			}
-			else {
-				sSuccHg.push_back(hg);
+			//hypergraph has been succesfully decomposed previously
+			if (v_succ[i]) {
+				htree = new Hypertree(*sSuccHg[hg]);
 				subtrees.push_back(htree);
 			}
+			else {
+				baldecomp = new BalKDecomp(hg, MyK, MyRecLevel + 1);
+				htree = baldecomp->buildHypertree();
+				delete baldecomp;
+
+				if (htree == nullptr) {
+					sFailedHg.push_back(hg);
+					break;
+				}
+				else {
+					sSuccHg[hg]=new Hypertree(*htree);
+					subtrees.push_back(htree);
+				}
+			}
+			i++;
 		}
 	}
 
@@ -265,15 +276,16 @@ BalKDecomp::~BalKDecomp()
 	delete MySubedges;
 }
 
-bool BalKDecomp::getHypergraph(Hypergraph ** Hg, bool * Succ, HE_VEC * Part, Hyperedge * Sup)
+template<typename T>
+bool BalKDecomp::getHypergraph(Hypergraph ** Hg, bool * Succ, T * Part, Hyperedge * Sup)
 {
-	size_t cnt = Part->size() + 1;
+	size_t cnt = Part->size() + (Sup != nullptr ? 1 : 0);
 
 	for (auto hg : sFailedHg) {
 		bool found = true;
 
 		if (hg->getNbrOfEdges() == cnt) {
-			if (!hg->hasEdge(Sup))
+			if (Sup != nullptr && !hg->hasEdge(Sup))
 				found = false;
 			if (found && !hg->hasAllEdges(Part))
 				found = false;
@@ -287,11 +299,12 @@ bool BalKDecomp::getHypergraph(Hypergraph ** Hg, bool * Succ, HE_VEC * Part, Hyp
 		}
 	}
 
-	for (auto hg : sSuccHg) {
+	for (auto pair : sSuccHg) {
+		Hypergraph* hg = pair.first;
 		bool found = true;
 
 		if (hg->getNbrOfEdges() == cnt) {
-			if (!hg->hasEdge(Sup))
+			if (Sup != nullptr && !hg->hasEdge(Sup))
 				found = false;
 			if (found && !hg->hasAllEdges(Part))
 				found = false;
@@ -311,9 +324,62 @@ bool BalKDecomp::getHypergraph(Hypergraph ** Hg, bool * Succ, HE_VEC * Part, Hyp
 
 	for (auto he : *Part)
 		(*Hg)->insertEdge(he);
-	(*Hg)->insertEdge(Sup);
+	if (Sup != nullptr)
+		(*Hg)->insertEdge(Sup);
 	*Succ = false;
 	return false;
+}
+
+/*
+***Description***
+The method expands pruned hypertree nodes, i.e., subgraphs which were not decomposed but are
+known to be decomposable are decomposed.
+
+INPUT:	HTree: Hypertree that has to be expanded
+OUTPUT: HTree: Expanded hypertree
+*/
+
+void BalKDecomp::expandHTree(Hypertree *HTree)
+{
+	//int iNbrOfEdges, i;
+	Hypertree *cut_node, *subtree;
+	HE_SET *lambda;
+	Hypergraph *hg;
+	bool succ;
+	BalKDecomp *baldecomp;
+	//set<Hyperedge *>::iterator SetIter1;
+	//set<Node *>::iterator SetIter2;
+
+	/*
+	ParentSep = new Hyperedge*[iMyK+1];
+	if(ParentSep == NULL)
+	writeErrorMsg("Error assigning memory.", "DetKDecomp::expandHTree");
+	*/
+
+	while ((cut_node = HTree->getCutNode()) != nullptr) {
+		// Store subgraph in an array
+		lambda = cut_node->getLambda();
+
+		// Get subgraph
+		getHypergraph<HE_SET>(&hg, &succ, lambda);
+
+		if (!succ)
+			writeErrorMsg("Hypergraph was not successfully decomposed!", "BalKDecomp::expandHTree");
+		
+		// Decompose subgraph
+		baldecomp = new BalKDecomp(hg, MyK, cut_node->getLabel());
+		subtree = baldecomp->buildHypertree();
+		delete baldecomp;
+
+		
+		if (subtree == nullptr)
+			writeErrorMsg("Illegal decomposition pruning.", "BalKDecomp::expandHTree");
+
+		// Replace the pruned node by the corresponding subtree
+		cut_node->getParent()->insChild(subtree);
+		cut_node->getParent()->remChild(cut_node);
+		delete cut_node;
+	}
 }
 
 Hypertree * BalKDecomp::buildHypertree()
@@ -339,6 +405,11 @@ Hypertree * BalKDecomp::buildHypertree()
 		DetKDecomp Decomp(MyHg, MyK, true);
 
 		HTree = Decomp.buildHypertree();
+	}
+
+	if (MyRecLevel == 0 && HTree != nullptr && HTree->getCutNode() != nullptr) {
+		cout << "Expanding hypertree ..." << endl;
+		expandHTree(HTree);
 	}
 
 

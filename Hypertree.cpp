@@ -26,6 +26,12 @@ Hypertree::Hypertree(Hypergraph *hg) : MyHg{ hg }
 {
 }
 
+Hypertree::Hypertree(const Hypertree &ht) : MyParent{ ht.MyParent }, MyChi{ ht.MyChi }, MyLambda{ ht.MyLambda }, MyPointers{ ht.MyPointers }, MyIDs{ ht.MyIDs }, iMyLabel{ ht.iMyLabel }, bMyCut{ ht.bMyCut }
+{
+	for (auto child : ht.MyChildren)
+		insChild(new Hypertree(*child));
+}
+
 
 Hypertree::~Hypertree()
 {
