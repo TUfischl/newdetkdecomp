@@ -30,7 +30,7 @@ Hypertree * BalKDecomp::decomp(HE_VEC & Edges)
 	HE_VEC sep_edges; //Edges to consider for the separator
 	Superedge *sep_edge;
 	VE_SET vertices;
-	int cnt_bal{ 0 };
+	int cnt_bal{ 0 }, cnt_sub_bal{ 0 };
 
 	if ((htree = decompTrivial(&Edges, nullptr)) != nullptr)
 		return htree;
@@ -65,18 +65,17 @@ Hypertree * BalKDecomp::decomp(HE_VEC & Edges)
 			sep->push_back(he);
 		}
 
-		sep_edge = Superedge::getSuperedge(sep,&vertices);
+		nbr_parts = separate(&Edges, partitions, connectors);
 
-		// super edge must be new and
-		// super edge from separator must not be part of current component
-		if (checked.find(sep_edge) == checked.end() &&
-			(MyHg->getNbrOfHeavyEdges() == 0 || find(Edges.begin(), Edges.end(), sep_edge) == Edges.end())) {
+		if (isBalanced(partitions, Edges.size())) {
+			sep_edge = Superedge::getSuperedge(sep, &vertices);
+			// super edge must be new and
+			// super edge from separator must not be part of current component
+			if (checked.find(sep_edge) == checked.end() &&
+				(MyHg->getNbrOfHeavyEdges() == 0 || find(Edges.begin(), Edges.end(), sep_edge) == Edges.end())) {
 
-			checked.insert(sep_edge);
+				checked.insert(sep_edge);
 
-			nbr_parts = separate(&Edges, partitions, connectors);
-
-			if (isBalanced(partitions, Edges.size())) {
 				cnt_bal++;
 				//Now try to decompose 
 				if ((htree = decompose(sep, sep_edge, partitions)) == nullptr)
@@ -86,17 +85,21 @@ Hypertree * BalKDecomp::decomp(HE_VEC & Edges)
 			}
 			else
 				delete sep;
-
-			for (auto part : partitions)
-				delete part;
-			partitions.clear();
-			for (auto conn : connectors)
-				delete conn;
-			connectors.clear();
 		}
 		else
 			delete sep;
+
+		for (auto part : partitions)
+			delete part;
+		partitions.clear();
+		for (auto conn : connectors)
+			delete conn;
+		connectors.clear();
+
 	}
+
+	if (MyRecLevel == 0)
+		cout << cnt_bal << " balanced separators tried." << endl;
 
 	if (htree == nullptr) {
 
@@ -118,35 +121,41 @@ Hypertree * BalKDecomp::decomp(HE_VEC & Edges)
 				for (auto he : *sub_separator)
 					he->labelAll(-1);
 
-				sep_edge = Superedge::getSuperedge(sub_separator,&vertices);
 
-				// super edge must be new and
-				// super edge from separator must not be part of current component
-				if (checked.find(sep_edge) == checked.end() &&
-					(MyHg->getNbrOfHeavyEdges() == 0 || find(Edges.begin(), Edges.end(), sep_edge) == Edges.end())) {
+				nbr_parts = separate(&Edges, partitions, connectors);
 
-					checked.insert(sep_edge);
+				if (isBalanced(partitions, Edges.size())) {
+					sep_edge = Superedge::getSuperedge(sub_separator, &vertices);
 
-					nbr_parts = separate(&Edges, partitions, connectors);
+					// super edge must be new and
+					// super edge from separator must not be part of current component
+					if (checked.find(sep_edge) == checked.end() &&
+						(MyHg->getNbrOfHeavyEdges() == 0 || find(Edges.begin(), Edges.end(), sep_edge) == Edges.end())) {
 
-					if (isBalanced(partitions, Edges.size())) {
+						checked.insert(sep_edge);
+
+
 						//Now try to decompose 
 						if ((htree = decompose(sub_separator, sep_edge, partitions)) != nullptr)
 							delete sub_separator;
+
+						cnt_sub_bal++;
 					}
 					else
 						delete sub_separator;
-
-					for (auto part : partitions)
-						delete part;
-					partitions.clear();
-					for (auto conn : connectors)
-						delete conn;
-					connectors.clear();
 				}
 				else
 					delete sub_separator;
+
+				for (auto part : partitions)
+					delete part;
+				partitions.clear();
+				for (auto conn : connectors)
+					delete conn;
+				connectors.clear();
 			}
+				
+			
 
 			if (htree == nullptr)
 				delete sep;
@@ -157,7 +166,7 @@ Hypertree * BalKDecomp::decomp(HE_VEC & Edges)
 	//	htree->reduceChi(&vertices);
 
 	if (MyRecLevel == 0)
-		cout << cnt_bal << " balanced separators tried." << endl;
+		cout << cnt_sub_bal << " subedge balanced separators tried." << endl;
 
 	return htree;
 }
@@ -249,6 +258,9 @@ HE_VEC BalKDecomp::getNeighborEdges(HE_VEC & Edges)
 					neighbors.push_back(he);
 				}
 		}
+
+	MyBaseGraph->resetEdgeLabels();
+	MyBaseGraph->resetVertexLabels();
 
 	return neighbors;
 }
