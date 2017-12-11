@@ -11,22 +11,22 @@ localfiles := $(shell  find . -maxdepth 1 -name "*.cpp")
 objects  := $(patsubst %.cpp, %.o, $(localfiles))
 allobjects := $(patsubst %.cpp, %.o, $(srcfiles))
 
-all: detkdecomp
+all: bin/detkdecomp bin/localbipkdecomp bin/globalbipkdecomp bin/balsepkdecomp bin/hg-stats
 
-detkdecomp: $(objects) mains/DetKDecompMain.o
-	    $(CXX) $(CXXFLAGS) $(LDFLAGS) -o detkdecomp ./mains/DetKDecompMain.o $(objects) $(LDLIBS)
+bin/detkdecomp: $(objects) mains/DetKDecompMain.o
+	    $(CXX) $(CXXFLAGS) $(LDFLAGS) -o bin/detkdecomp ./mains/DetKDecompMain.o $(objects) $(LDLIBS)
 
-localbipkdecomp: $(objects) mains/LocalBipKDecompMain.o
-	    $(CXX) $(CXXFLAGS) $(LDFLAGS) -o localbipkdecomp ./mains/LocalBipKDecompMain.o $(objects) $(LDLIBS)
+bin/localbipkdecomp: $(objects) mains/LocalBipKDecompMain.o
+	    $(CXX) $(CXXFLAGS) $(LDFLAGS) -o bin/localbipkdecomp ./mains/LocalBipKDecompMain.o $(objects) $(LDLIBS)
 		
-globalbipkdecomp: $(objects) mains/GlobalBipDecompMain.o
-	    $(CXX) $(CXXFLAGS) $(LDFLAGS) -o globalbipkdecomp ./mains/GlobalBipDecompMain.o $(objects) $(LDLIBS)
+bin/globalbipkdecomp: $(objects) mains/GlobalBipKDecompMain.o
+	    $(CXX) $(CXXFLAGS) $(LDFLAGS) -o bin/globalbipkdecomp ./mains/GlobalBipKDecompMain.o $(objects) $(LDLIBS)
 		
-balsepkdecomp: $(objects) mains/BalSepKDecompMain.o
-	    $(CXX) $(CXXFLAGS) $(LDFLAGS) -o balsepkdecomp ./mains/BalSepKDecompMain.o $(objects) $(LDLIBS)
+bin/balsepkdecomp: $(objects) mains/BalSepKDecompMain.o
+	    $(CXX) $(CXXFLAGS) $(LDFLAGS) -o bin/balsepkdecomp ./mains/BalSepKDecompMain.o $(objects) $(LDLIBS)
 		
-hg-stats: $(objects) mains/HypergraphStats.o
-	    $(CXX) $(CXXFLAGS) $(LDFLAGS) -o hg-stats ./mains/HypergraphStats.o $(objects) $(LDLIBS)
+bin/hg-stats: $(objects) mains/HypergraphStats.o
+	    $(CXX) $(CXXFLAGS) $(LDFLAGS) -o bin/hg-stats ./mains/HypergraphStats.o $(objects) $(LDLIBS)
 
 depend: .depend
 
@@ -36,6 +36,7 @@ depend: .depend
 
 clean:
 	    rm -f $(allobjects)
+	    rm -f bin/*
 
 dist-clean: clean
 	    rm -f *~ .depend
