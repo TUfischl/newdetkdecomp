@@ -37,18 +37,18 @@
 
 using namespace std;
 
-#include "Parser.h"
-#include "Hypergraph.h"
-#include "Hypertree.h"
-#include "Component.h"
-#include "Vertex.h"
-#include "Hyperedge.h"
-#include "Globals.h"
-#include "DetKDecomp.h"
-#include "Hingetree.h"
-#include "HingeDecomp.h"
-#include "BalKDecomp.h"
-#include "Subedges.h"
+#include "../Parser.h"
+#include "../Hypergraph.h"
+#include "../Hypertree.h"
+#include "../Component.h"
+#include "../Vertex.h"
+#include "../Hyperedge.h"
+#include "../Globals.h"
+#include "../DetKDecomp.h"
+#include "../Hingetree.h"
+#include "../HingeDecomp.h"
+#include "../BalKDecomp.h"
+#include "../Subedges.h"
 
 void usage(int, char **, int *, bool *);
 Hypertree *decompK(Hypergraph *, int);
