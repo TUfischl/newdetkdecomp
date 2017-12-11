@@ -1,4 +1,8 @@
 #include <iostream>
+#include <set>
+#include <algorithm>
+#include <vector>
+#include <iterator>
 
 #include "Globals.h"
 #include "Vertex.h"
@@ -156,4 +160,51 @@ int random_range(int iLB, int iUB)
 
 	iRange = (iUB - iLB) + 1;
 	return iLB + (int)(iRange * (rand() / (RAND_MAX + 1.0)));
+}
+
+powerset_type powerset(set_type const& set)
+{
+	typedef set_type::const_iterator set_iter;
+	typedef std::vector<set_iter> vec;
+	typedef vec::iterator vec_iter;
+
+	struct local
+	{
+		static Vertex* dereference(set_iter v) { return *v; }
+	};
+
+	powerset_type result;
+
+	vec elements;
+	do
+	{
+		set_type tmp;
+		transform(elements.begin(), elements.end(),
+			std::inserter(tmp, tmp.end()),
+			local::dereference);
+		result.insert(tmp);
+		if (!elements.empty() && ++elements.back() == set.end())
+		{
+			elements.pop_back();
+		}
+		else
+		{
+			set_iter iter;
+			if (elements.empty())
+			{
+				iter = set.begin();
+			}
+			else
+			{
+				iter = elements.back();
+				++iter;
+			}
+			for (; iter != set.end(); ++iter)
+			{
+				elements.push_back(iter);
+			}
+		}
+	} while (!elements.empty());
+
+	return result;
 }

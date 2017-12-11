@@ -147,6 +147,27 @@ public:
 	 * version for hyperedges.
 	 */
 	HE_VEC getMCSOrder();
+
+	/*
+	 * Hypergraph Properties
+	 */
+	
+	 /* 
+	  * Calculates the degree of the hypergraph.
+	  */
+	int degree();
+
+	/*
+	* Calculates the k-BIP  of the hypergraph.
+	*/
+	int bip(int k);
+
+	/*
+	* Calculates the k-BIP  of the hypergraph.
+	*/
+	int vcDimension();
+
+
 };
 
 #endif
