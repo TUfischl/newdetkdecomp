@@ -172,41 +172,28 @@ void usage(int argc, char **argv, int *K, bool *bDef)
 			cInpFile[i] = '.';
 }
 
-
-//With HingeDecomp
+//LocalBIP
 Hypertree *decompK(Hypergraph *HG, int iWidth)
 {
 	time_t start, end;
-	Hypertree *htree{ nullptr };
-	HingeDecomp HingeDecomp(HG,iWidth);
-	Hingetree *hinge{ nullptr };
+	Hypertree *HT;
+	DetKDecomp Decomp(HG, iWidth, true);
 
-	cout << "Building hingetree" << endl;
+	// Apply the decomposition algorithm
+	cout << "Building hypertree (det-" << iWidth << "-decomp) ... " << endl;
 	time(&start);
-	hinge = HingeDecomp.buildHingetree();
+	HT = Decomp.buildHypertree();
 	time(&end);
-	cout << *hinge << endl;
-	cout << "Nbr of Hinges: " << hinge->nbrOfNodes() << endl;
-	cout << "Largest Hinge: " << hinge->sizeOfLargestHinge() << endl;
-	cout << "Building hingetree done in " << difftime(end, start) << " sec" << endl;
+	if (HT == NULL)
+		cout << "Hypertree of width " << iWidth << " not found in " << difftime(end, start) << " sec." << endl << endl;
+	else {
+		cout << "Building hypertree done in " << difftime(end, start) << " sec";
+		cout << " (hypertree-width: " << HT->getHTreeWidth() << ")." << endl << endl;
 
-		// Apply the decomposition algorithm
-		cout << "Building hypertree (det-" << iWidth << "-decomp) ... " << endl;
-		time(&start);
-		htree = HingeDecomp.buildHypertree();
-		time(&end);
-		if (htree == nullptr) {
-			cout << "Hypertree of width " << iWidth << " not found in " << difftime(end, start) << " sec." << endl << endl;
-		}
-		else {
-			cout << "Building hypertree done in " << difftime(end, start) << " sec";
-			cout << " (hypertree-width: " << htree->getHTreeWidth() << ")." << endl << endl;
+		HT->shrink(false);
+	}
 
-			htree->shrink(false);
-		}
-
-		
-	return htree;
+	return HT;
 }
 
 
