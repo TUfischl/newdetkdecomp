@@ -486,6 +486,12 @@ Hypertree *DetKDecomp::decomp(HE_VEC *HEdges, VE_VEC *Connector, int RecLevel)
 	HE_VEC inner_edges, bound_edges, add_edges;
 	list<Hyperedge *> *succ_parts, *fail_parts;
 
+	/*
+	for (int k = 0; k <= RecLevel; k++)
+		cout << "+";
+	cout << " " << *HEdges << endl;
+	*/
+
 	if ((htree = decompTrivial(HEdges, Connector)) != nullptr)
 		return htree;	
 
@@ -668,12 +674,18 @@ Hypertree *DetKDecomp::decomp(HE_VEC *HEdges, VE_VEC *Connector, int RecLevel)
 							}
 							else {
 								// Create a new hypertree node
-								for (i = 0; i < nbr_sel_cov; i++) {
-									j = cov_sep_set[i];
-									in_comp[j] ? bound_edges[j]->setLabel(-1) : bound_edges[j]->setLabel(0);
+								if (sub_edge) {
+									for (auto he : *separator)
+										he->setLabel(-1);
 								}
-								if (add_edge)
-									add_edges[i_add]->setLabel(-1);
+								else {
+									for (i = 0; i < nbr_sel_cov; i++) {
+										j = cov_sep_set[i];
+										in_comp[j] ? bound_edges[j]->setLabel(-1) : bound_edges[j]->setLabel(0);
+									}
+									if (add_edge)
+										add_edges[i_add]->setLabel(-1);
+								}
 								htree = getHTNode(separator, Connector, &Subtrees);
 							}
 						}
@@ -688,10 +700,11 @@ Hypertree *DetKDecomp::decomp(HE_VEC *HEdges, VE_VEC *Connector, int RecLevel)
 							cut_parts.clear();
 						}
 
+						//Needed so that in the next iteration getSepParts finds correct used separator
 						for (auto he : *separator)
 							he->labelAll(0);
 
-						if (MyBIP) {
+						if (MyBIP && htree == nullptr) {
 							//Start sub_edge procedure
 							if (!sub_edge) {
 								sub_edge = true;
@@ -712,8 +725,8 @@ Hypertree *DetKDecomp::decomp(HE_VEC *HEdges, VE_VEC *Connector, int RecLevel)
 							// All subedge separators tried
 							if (sub_separator != nullptr) {
 								// Label Hypergraph accordignly
-								MyHg->resetEdgeLabels(0);
-								MyHg->resetVertexLabels(0);
+								MyHg->resetEdgeLabels();
+								MyHg->resetVertexLabels();
 								for (auto he : *sub_separator)
 									he->labelAll(-1);
 							} else
@@ -836,6 +849,8 @@ Hypertree *DetKDecomp::buildHypertree()
 
 	// Order hyperedges heuristically
 	HEdges = MyHg->getMCSOrder();
+
+	//cout << HEdges << endl;
 
 	// Store initial heuristic order as weight
 	for(int i=0; i < HEdges.size(); i++)
