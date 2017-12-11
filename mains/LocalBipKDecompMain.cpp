@@ -68,7 +68,7 @@ int main(int argc, char **argv)
 	Parser *P;
 	Hypertree *HT;
 
-	cout << "*** localbip-k-decomp (version 2.0) - with Hinge ***" << endl << endl;
+	cout << "*** localbip-k-decomp (version 2.0) ***" << endl << endl;
 
 	// Check command line arguments and initialize random number generator
 	usage(argc, argv, &K, &bDef);
