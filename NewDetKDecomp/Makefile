@@ -16,6 +16,18 @@ all: detkdecomp
 detkdecomp: $(objects) mains/DetKDecompMain.o
 	    $(CXX) $(CXXFLAGS) $(LDFLAGS) -o detkdecomp ./mains/DetKDecompMain.o $(objects) $(LDLIBS)
 
+localbipkdecomp: $(objects) mains/LocalBipKDecompMain.o
+	    $(CXX) $(CXXFLAGS) $(LDFLAGS) -o localbipkdecomp ./mains/LocalBipKDecompMain.o $(objects) $(LDLIBS)
+		
+globalbipkdecomp: $(objects) mains/GlobalBipDecompMain.o
+	    $(CXX) $(CXXFLAGS) $(LDFLAGS) -o globalbipkdecomp ./mains/GlobalBipDecompMain.o $(objects) $(LDLIBS)
+		
+balsepkdecomp: $(objects) mains/BalSepKDecompMain.o
+	    $(CXX) $(CXXFLAGS) $(LDFLAGS) -o balsepkdecomp ./mains/BalSepKDecompMain.o $(objects) $(LDLIBS)
+		
+hg-stats: $(objects) mains/HypergraphStats.o
+	    $(CXX) $(CXXFLAGS) $(LDFLAGS) -o hg-stats ./mains/HypergraphStats.o $(objects) $(LDLIBS)
+
 depend: .depend
 
 .depend: $(srcfiles)
