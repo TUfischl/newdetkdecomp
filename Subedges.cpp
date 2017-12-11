@@ -39,8 +39,8 @@ HE_VEC* Subedges::getSubedges(Hyperedge *he)
 		if (n == 0)
 			return (MySubedges[he] = sub_edges);
 
-		MyHg->resetVertexLabels();
-		he->labelAll(1);
+		//MyHg->resetVertexLabels();
+		//he->labelAll(1);
 
 		CombinationIterator comb(n, k);
 		indices = comb.next();
@@ -48,10 +48,10 @@ HE_VEC* Subedges::getSubedges(Hyperedge *he)
 			new_edge = nullptr;
 			new_vertices.clear();
 			//Build the intersection of a union of up to k edges
-			//i.e. for k edges, find the vertices that are labelled with 1.
+			//i.e. for k edges, find the vertices that are also in he.
 			for (i = 0; indices[i] != -1; i++)
 				for (auto v : neighbors[indices[i]]->allVertices())
-					if (v->getLabel() == 1)
+					if (find(he->allVertices().begin(),he->allVertices().end(),v) != he->allVertices().end())
 						new_vertices.insert(v);
 
 			//Subedge is different then original edge
