@@ -1,8 +1,10 @@
 
 #include <algorithm>
+#include <cmath>
 
 #include "Globals.h"
 #include "Hypergraph.h"
+#include "CombinationIterator.h"
 
 void Hypergraph::labelReachEdges(Hyperedge * edge)
 {
@@ -205,3 +207,122 @@ HE_VEC Hypergraph::getMCSOrder()
 
 	return order;
 }
+
+int Hypergraph::degree()
+{
+	int maxDegree = 0;
+
+	for (auto v : MyVertices) {
+		int degree = MyVertexNeighbors[v].size();
+		if (MyVertexNeighbors[v].size() > maxDegree) maxDegree = degree;
+	}
+
+	return maxDegree;
+}
+
+int Hypergraph::bip(int k)
+{
+	int maxBip = 0;
+	HE_VEC edges(MyEdges.begin(), MyEdges.end());
+
+	if (k <= MyEdges.size()) {
+		CombinationIterator comb(MyEdges.size(), k);
+		comb.setStage(k);
+		int *indices;
+		while ((indices = comb.next()) != nullptr) {
+			VE_VEC vertices;
+
+			for (auto v : edges[indices[0]]->allVertices()) {
+				bool found = true;
+				for (int i = 1; indices[i] != -1 && found; i++)
+					if (find(edges[indices[i]]->allVertices().begin(), edges[indices[i]]->allVertices().end(), v) == edges[indices[i]]->allVertices().end())
+						found = false;
+
+				if (found)
+					vertices.push_back(v);
+			}
+
+			if (vertices.size() > maxBip)
+				maxBip = vertices.size();
+		}
+	}
+	else {
+		VE_VEC vertices;
+
+		for (auto v : edges[0]->allVertices()) {
+			bool found = true;
+			for (int i = 1; i < edges.size() && found; i++)
+				if (find(edges[i]->allVertices().begin(), edges[i]->allVertices().end(), v) == edges[i]->allVertices().end())
+					found = false;
+
+			if (found)
+				vertices.push_back(v);
+		}
+
+		return vertices.size();
+	}
+
+	return maxBip;
+}
+
+int Hypergraph::vcDimension()
+{
+	int maxVC = (int)floor(log(MyEdges.size()) / log(2));
+	int i;
+	VE_VEC vertices(MyVertices.begin(), MyVertices.end());
+
+	//Find the maximum cardinality of a shattered subset of V
+	for (i = 1; i <= maxVC; i++) {
+		bool shattered = false;
+
+		//For each subset X of size vc check if it is shattered, if X is shattered then vc is at least i
+		int *indices;
+		CombinationIterator cit(vertices.size(), i);
+		cit.setStage(i);
+		while ((indices = cit.next()) != nullptr && !shattered) {
+			bool check_x = true;
+			set<Vertex*> set_x;
+			for (int j = 0; indices[j] != -1; j++)
+				set_x.insert(vertices[indices[j]]);
+			//Collection<String> setX = cit.next();
+			//PowerSetIterator<String> itPSetX = new PowerSetIterator<String>(setX);
+			powerset_type pow_set_x = powerset(set_x);
+
+			//For each A \subseteq X check if there is an edge s.t. A = X \cap e
+			//if there is a subset such that this check fails (checkX = false), then X is not shattered.
+			for (powerset_type::iterator iter = pow_set_x.begin();
+				iter != pow_set_x.end() && check_x;
+				++iter) {
+
+				bool edge_found = false;
+				for (auto e_it = MyEdges.begin(); e_it != MyEdges.end() && !edge_found; e_it++) {
+					set<Vertex*> help_x;
+
+					for (auto v : set_x) {
+						if (find((*e_it)->allVertices().begin(), (*e_it)->allVertices().end(), v) != (*e_it)->allVertices().end())
+							help_x.insert(v);
+					}
+
+					if (help_x == *iter)
+						edge_found = true;
+				}
+
+				if (!edge_found)
+					check_x = false;
+
+			}
+
+			if (check_x)
+				shattered = true;
+
+		}
+
+		if (!shattered)
+			return i - 1;
+
+	}
+			
+
+	return i - 1;
+}
+

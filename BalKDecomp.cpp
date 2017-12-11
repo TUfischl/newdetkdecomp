@@ -121,19 +121,18 @@ Hypertree * BalKDecomp::decomp(HE_VEC & Edges)
 				for (auto he : *sub_separator)
 					he->labelAll(-1);
 
+				sep_edge = Superedge::getSuperedge(sub_separator, &vertices);
 
-				nbr_parts = separate(&Edges, partitions, connectors);
+				// super edge must be new and
+				// super edge from separator must not be part of current component
+				if (checked.find(sep_edge) == checked.end() &&
+					(MyHg->getNbrOfHeavyEdges() == 0 || find(Edges.begin(), Edges.end(), sep_edge) == Edges.end())) {
 
-				if (isBalanced(partitions, Edges.size())) {
-					sep_edge = Superedge::getSuperedge(sub_separator, &vertices);
+					checked.insert(sep_edge);
 
-					// super edge must be new and
-					// super edge from separator must not be part of current component
-					if (checked.find(sep_edge) == checked.end() &&
-						(MyHg->getNbrOfHeavyEdges() == 0 || find(Edges.begin(), Edges.end(), sep_edge) == Edges.end())) {
+					nbr_parts = separate(&Edges, partitions, connectors);
 
-						checked.insert(sep_edge);
-
+					if (isBalanced(partitions, Edges.size())) {
 
 						//Now try to decompose 
 						if ((htree = decompose(sub_separator, sep_edge, partitions)) != nullptr)
@@ -143,16 +142,18 @@ Hypertree * BalKDecomp::decomp(HE_VEC & Edges)
 					}
 					else
 						delete sub_separator;
+
+					for (auto part : partitions)
+						delete part;
+					partitions.clear();
+					for (auto conn : connectors)
+						delete conn;
+					connectors.clear();
 				}
 				else
 					delete sub_separator;
 
-				for (auto part : partitions)
-					delete part;
-				partitions.clear();
-				for (auto conn : connectors)
-					delete conn;
-				connectors.clear();
+
 			}
 				
 			

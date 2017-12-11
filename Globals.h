@@ -5,6 +5,7 @@
 
 #include<string>
 #include<unordered_set>
+#include<set>
 #include<vector>
 
 //#include "Hyperedge.h"
@@ -19,6 +20,9 @@ using VE_VEC = vector<Vertex *>;
 using VE_SET = unordered_set<Vertex *>;
 using HE_VEC = vector<Hyperedge *>;
 using HE_SET = unordered_set<Hyperedge *>;
+
+typedef set<Vertex *> set_type;
+typedef set<set_type> powerset_type;
 
 // Writes an error message to the standard error output stream
 void writeErrorMsg(const string& cMessage, const string& cLocation, bool bExitProgram = true);
@@ -44,6 +48,7 @@ std::ostream& operator<< (std::ostream &out, const HE_VEC &he);
 // Outputs a set of vertices
 std::ostream& operator<< (std::ostream &out, const VE_SET &v);
 
+powerset_type powerset(set_type const& set);
 
 template<class T>
 struct Iterable
