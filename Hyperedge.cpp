@@ -11,7 +11,7 @@ Hyperedge::Hyperedge(const string & name) : Hyperedge(++G_EdgeID, name)
 {
 }
 
-Hyperedge::Hyperedge(const string & name, const unordered_set<Vertex*>& vertices) : Hyperedge(++G_EdgeID, name, vertices)
+Hyperedge::Hyperedge(const string & name, const VE_SET& vertices) : Hyperedge(++G_EdgeID, name, vertices)
 {
 }
 

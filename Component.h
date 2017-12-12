@@ -18,7 +18,7 @@ public:
 	Component(uint id, string name);
 	virtual~Component();
 
-	uint getId() { return MyId; }
+	uint getId() const { return MyId; }
 	string getName() const { return MyName; }
 
 	int getLabel() { return MyLabel; }

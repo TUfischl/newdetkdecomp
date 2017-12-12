@@ -33,12 +33,12 @@ protected:
 public:
 	//Helper Constructors
 	Hyperedge(const string& name);
-	Hyperedge(const string& name, const unordered_set<Vertex *> &vertices);
-	Hyperedge(int id, const string& name) : Hyperedge(id, name, unordered_set<Vertex*>()) { }
+	Hyperedge(const string& name, const VE_SET &vertices);
+	Hyperedge(int id, const string& name) : Hyperedge(id, name, VE_SET()) { }
 	Hyperedge(int id, const string& name, VE_SET::const_iterator begin, VE_SET::const_iterator end) : Hyperedge(id,name, VE_SET(begin, end)) { }
 
 	//Real Constructor
-	Hyperedge(int id, const string& name, const unordered_set<Vertex *> &vertices) : Component(id, name), MyVertices(vertices) {};
+	Hyperedge(int id, const string& name, const VE_SET &vertices) : Component(id, name), MyVertices(vertices) {};
 	virtual~Hyperedge();
 
 	virtual void add(Vertex* v);
