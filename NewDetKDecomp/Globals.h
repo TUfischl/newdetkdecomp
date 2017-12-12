@@ -8,18 +8,25 @@
 #include<set>
 #include<vector>
 
-//#include "Hyperedge.h"
+//#include "Component.h"
 
 class Vertex;
 class Hyperedge;
+class Component;
 
 using namespace std;
-
 using uint = unsigned int;
+
+
+struct ComponentHash {
+	size_t operator()(const Component *c) const;
+};
+
+
 using VE_VEC = vector<Vertex *>;
-using VE_SET = unordered_set<Vertex *>;
+using VE_SET = unordered_set<Vertex *,ComponentHash>;
 using HE_VEC = vector<Hyperedge *>;
-using HE_SET = unordered_set<Hyperedge *>;
+using HE_SET = unordered_set<Hyperedge *,ComponentHash>;
 
 typedef set<Vertex *> set_type;
 typedef set<set_type> powerset_type;

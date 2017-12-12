@@ -4,6 +4,7 @@
 #include <vector>
 #include <iterator>
 
+#include "Component.h"
 #include "Globals.h"
 #include "Vertex.h"
 #include "Hyperedge.h"
@@ -207,4 +208,9 @@ powerset_type powerset(set_type const& set)
 	} while (!elements.empty());
 
 	return result;
+}
+
+size_t ComponentHash::operator()(const Component * c) const
+{
+	return std::hash<uint>()(c->getId());
 }
