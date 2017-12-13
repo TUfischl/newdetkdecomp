@@ -1,3 +1,5 @@
+#include <cmath>
+
 #include "Decomp.h"
 #include "Hyperedge.h"
 #include "Hypergraph.h"

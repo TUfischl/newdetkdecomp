@@ -10,9 +10,9 @@
 
 //#include "Component.h"
 
+class Component;
 class Vertex;
 class Hyperedge;
-class Component;
 
 using namespace std;
 using uint = unsigned int;
@@ -20,6 +20,8 @@ using uint = unsigned int;
 
 struct ComponentHash {
 	size_t operator()(const Component *c) const;
+	size_t operator()(const Vertex *c) const;
+	size_t operator()(const Hyperedge *c) const;
 };
 
 

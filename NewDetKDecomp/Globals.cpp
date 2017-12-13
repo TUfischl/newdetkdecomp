@@ -214,3 +214,13 @@ size_t ComponentHash::operator()(const Component * c) const
 {
 	return std::hash<uint>()(c->getId());
 }
+
+size_t ComponentHash::operator()(const Vertex * c) const
+{
+        return std::hash<uint>()(c->getId());
+}
+
+size_t ComponentHash::operator()(const Hyperedge * c) const
+{
+        return std::hash<uint>()(c->getId());
+}
