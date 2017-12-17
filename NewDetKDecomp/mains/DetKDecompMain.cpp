@@ -177,7 +177,7 @@ Hypertree *decompK(Hypergraph *HG, int iWidth)
 {
 	time_t start, end;
 	Hypertree *HT;
-	DetKDecomp Decomp(HG, iWidth, true);
+	DetKDecomp Decomp(HG, iWidth, false);
 
 	// Apply the decomposition algorithm
 	cout << "Building hypertree (det-" << iWidth << "-decomp) ... " << endl;

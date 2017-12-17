@@ -850,7 +850,7 @@ Hypertree *DetKDecomp::buildHypertree()
 	// Order hyperedges heuristically
 	HEdges = MyHg->getMCSOrder();
 
-	cout << HEdges << endl;
+     	//cout << HEdges << endl;
 
 	// Store initial heuristic order as weight
 	for(int i=0; i < HEdges.size(); i++)
