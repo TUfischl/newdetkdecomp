@@ -99,6 +99,7 @@ int main(int argc, char **argv)
 	cout << "Building hypergraph done in " << difftime(end, start) << " sec." << endl << endl;
 	delete P;
 
+        cout << "Arity: " << HG.arity() << endl;
 	cout << "Degree: " << HG.degree() << endl; 
 	cout << "BIP: " << HG.bip(2) << endl;
 	cout << "3-BIP: " << HG.bip(3) << endl;
