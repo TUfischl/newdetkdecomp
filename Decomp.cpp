@@ -73,7 +73,7 @@ Hypertree * Decomp::decompTrivial(HE_VEC * HEdges, VE_VEC * Connector)
 				for (auto he : *HEdges) {
 					part.push_back(he);
 					he->setLabel(-1);
-					if (i == half) {
+					if (i == half - 1) {
 						htree = getHTNode(&part);
 						part.clear();
 					}

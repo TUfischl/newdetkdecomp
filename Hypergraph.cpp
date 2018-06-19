@@ -326,3 +326,14 @@ int Hypergraph::vcDimension()
 	return i - 1;
 }
 
+int Hypergraph::arity() const
+{
+	int ari = 0;
+	int help = 0;
+	for (auto e : MyEdges)
+		if ((help = e->getNbrOfVertices()) > ari)
+			ari = help;
+
+	return ari;
+}
+

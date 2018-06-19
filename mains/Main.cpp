@@ -50,8 +50,13 @@ using namespace std;
 #include "../BalKDecomp.h"
 #include "../Subedges.h"
 
-void usage(int, char **, int *, bool *);
-Hypertree *decompK(Hypergraph *, int);
+void usage(int, char **, bool *);
+Hypertree *decompKSamer(Hypergraph *, int);
+Hypertree *decompKLocalBIP(Hypergraph *, int);
+Hypertree *decompKGlobalBIP(Hypergraph *, int);
+Hypertree *decompKBalSep(Hypergraph *, int);
+
+
 bool verify(Hypergraph *, Hypertree *);
 
 
@@ -61,17 +66,18 @@ char *cInpFile, *cOutFile;
 
 int main(int argc, char **argv)
 {
-	int iRandomInit, K = 0;
+	int iRandomInit, K = 3;
 	bool bDef;
+	bool bFound = false;
 	time_t start, end;
 	Hypergraph HG;
 	Parser *P;
 	Hypertree *HT;
 
-	cout << "*** det-k-decomp (version 2.0) ***" << endl << endl;
+	cout << "*** Hyperbench Analysis (version 1.0) ***" << endl << endl;
 
 	// Check command line arguments and initialize random number generator
-	usage(argc, argv, &K, &bDef);
+	usage(argc, argv, &bDef);
 	//srand(200);
 	srand((unsigned int)time(NULL));
 	iRandomInit = random_range(999, 9999);
@@ -99,32 +105,90 @@ int main(int argc, char **argv)
 	cout << "Building hypergraph done in " << difftime(end, start) << " sec." << endl << endl;
 	delete P;
 
+
+	cout << "Arity: " << HG.arity() << endl;
 	cout << "Degree: " << HG.degree() << endl; 
 	cout << "BIP: " << HG.bip(2) << endl;
 	cout << "3-BIP: " << HG.bip(3) << endl;
 	cout << "4-BIP: " << HG.bip(4) << endl;
 	cout << "VC-dim: " << HG.vcDimension() << endl;
 
-	HT = decompK(&HG, K);
+	do {
 
-	// Check hypertree conditions
-	if (HT != NULL)
-	{
-		cout << "Checking hypertree conditions ... " << endl;
-		time(&start);
-		verify(&HG, HT);
-		time(&end);
-		cout << "Checking hypertree conditions done in " << difftime(end, start) << " sec." << endl << endl;
-		HT->outputToGML(&HG, cOutFile);
-		cout << "GML output written to: " << cOutFile << endl << endl;
-		delete HT;
+		HT = decompKSamer(&HG, K);
+
+		// Check hypertree conditions
+		if (HT != NULL)
+		{
+			cout << "Checking hypertree conditions ... " << endl;
+			time(&start);
+			verify(&HG, HT);
+			time(&end);
+			cout << "Checking hypertree conditions done in " << difftime(end, start) << " sec." << endl << endl;
+			HT->outputToGML(&HG, cOutFile);
+			cout << "GML output written to: " << cOutFile << endl << endl;
+			delete HT;
+			K--;
+		}
+
+	} while (K >= 1 && HT==nullptr);
+
+
+	//Start GHW analysis if K >= 2
+	if (K >= 2) {
+
+		HT = decompKGlobalBIP(&HG, K);
+
+		// Check hypertree conditions
+		if (HT != NULL)
+		{
+			cout << "Checking hypertree conditions ... " << endl;
+			time(&start);
+			verify(&HG, HT);
+			time(&end);
+			cout << "Checking hypertree conditions done in " << difftime(end, start) << " sec." << endl << endl;
+			HT->outputToGML(&HG, cOutFile);
+			cout << "GML output written to: " << cOutFile << endl << endl;
+			delete HT;
+		}
+
+		HT = decompKLocalBIP(&HG, K);
+
+		// Check hypertree conditions
+		if (HT != NULL)
+		{
+			cout << "Checking hypertree conditions ... " << endl;
+			time(&start);
+			verify(&HG, HT);
+			time(&end);
+			cout << "Checking hypertree conditions done in " << difftime(end, start) << " sec." << endl << endl;
+			HT->outputToGML(&HG, cOutFile);
+			cout << "GML output written to: " << cOutFile << endl << endl;
+			delete HT;
+		}
+
+		HT = decompKBalSep(&HG, K);
+
+		// Check hypertree conditions
+		if (HT != NULL)
+		{
+			cout << "Checking hypertree conditions ... " << endl;
+			time(&start);
+			verify(&HG, HT);
+			time(&end);
+			cout << "Checking hypertree conditions done in " << difftime(end, start) << " sec." << endl << endl;
+			HT->outputToGML(&HG, cOutFile);
+			cout << "GML output written to: " << cOutFile << endl << endl;
+			delete HT;
+		}
+
 	}
 
 	return EXIT_SUCCESS;
 }
 
 
-void usage(int argc, char **argv, int *K, bool *bDef)
+void usage(int argc, char **argv, bool *bDef)
 {
 	int i, j, k;
 	*bDef = false;
@@ -138,6 +202,7 @@ void usage(int argc, char **argv, int *K, bool *bDef)
 			exit(EXIT_FAILURE);
 		}
 
+		/*
 		if (i < argc - 1) {
 			for (j = 0; argv[i][j] == '0'; j++);
 			for (k = 0; (k < 6) && (argv[i][j + k] != '\0'); k++)
@@ -155,9 +220,10 @@ void usage(int argc, char **argv, int *K, bool *bDef)
 				exit(EXIT_FAILURE);
 			}
 		}
+		*/
 
 		// Write usage error message
-		if ((!*bDef && (argc < 3)) || (*bDef && (argc < 4)) || (i < argc - 1)) {
+		if ((!*bDef && (argc < 2)) || (*bDef && (argc < 3)) || (i < argc - 1)) {
 			cerr << "Usage: " << argv[0] << " [-def] <k> <filename>" << endl;
 			exit(EXIT_FAILURE);
 		}
@@ -203,9 +269,9 @@ Hypertree *decompK(Hypergraph *HG, int iWidth)
 	return HT;
 }*/
 
-/*
+
 //Samer
-Hypertree *decompK(Hypergraph *HG, int iWidth)
+Hypertree *decompKSamer(Hypergraph *HG, int iWidth)
 {
 	time_t start, end;
 	Hypertree *HT;
@@ -227,38 +293,38 @@ Hypertree *decompK(Hypergraph *HG, int iWidth)
 
 	return HT;
 }
-*/
 
 
-/*
+
+
 //LocalBIP
-Hypertree *decompK(Hypergraph *HG, int iWidth)
+Hypertree *decompKLocalBIP(Hypergraph *HG, int iWidth)
 {
 	time_t start, end;
 	Hypertree *HT;
 	DetKDecomp Decomp(HG, iWidth, true);
 
 	// Apply the decomposition algorithm
-	cout << "Building hypertree (det-" << iWidth << "-decomp) ... " << endl;
+	cout << "Building generalized hypertree (localbip-" << iWidth << "-decomp) ... " << endl;
 	time(&start);
 	HT = Decomp.buildHypertree();
 	time(&end);
 	if (HT == NULL)
-		cout << "Hypertree of width " << iWidth << " not found in " << difftime(end, start) << " sec." << endl << endl;
+		cout << "Generalized Hypertree of width " << iWidth << " not found in " << difftime(end, start) << " sec." << endl << endl;
 	else {
-		cout << "Building hypertree done in " << difftime(end, start) << " sec";
-		cout << " (hypertree-width: " << HT->getHTreeWidth() << ")." << endl << endl;
+		cout << "Building generalized hypertree done in " << difftime(end, start) << " sec";
+		cout << " (generalized-hypertree-width: " << HT->getHTreeWidth() << ")." << endl << endl;
 
 		HT->shrink(false);
 	}
 
 	return HT;
 }
-*/
 
-/*
+
+
 //GlobalBIP
-Hypertree *decompK(Hypergraph *HG, int iWidth)
+Hypertree *decompKGlobalBIP(Hypergraph *HG, int iWidth)
 {
 time_t start, end;
 Hypertree *HT;
@@ -280,28 +346,28 @@ cout << edges.size() << " subedges added in " << difftime(end, start) << " sec."
 
 
 // Apply the decomposition algorithm
-cout << "Building hypertree (det-" << iWidth << "-decomp) ... " << endl;
+cout << "Building generalized hypertree (globalbip-" << iWidth << "-decomp) ... " << endl;
 time(&start);
 HT = Decomp.buildHypertree();
 time(&end);
 if (HT == NULL)
-cout << "Hypertree of width " << iWidth << " not found in " << difftime(end, start) << " sec." << endl << endl;
+cout << "Generalized hypertree of width " << iWidth << " not found in " << difftime(end, start) << " sec." << endl << endl;
 else {
-cout << "Building hypertree done in " << difftime(end, start) << " sec";
-cout << " (hypertree-width: " << HT->getHTreeWidth() << ")." << endl << endl;
+cout << "Building generalized hypertree done in " << difftime(end, start) << " sec";
+cout << " (generalized-hypertree-width: " << HT->getHTreeWidth() << ")." << endl << endl;
 
 HT->shrink(false);
 }
 
 return HT;
 }
-*/
+
 
 
 
 
 //BalSeparator
-Hypertree *decompK(Hypergraph *HG, int iWidth)
+Hypertree *decompKBalSep(Hypergraph *HG, int iWidth)
 {
 	time_t start, end;
 	Hypertree *HT;
@@ -309,15 +375,15 @@ Hypertree *decompK(Hypergraph *HG, int iWidth)
 	BalKDecomp::init(HG, 0);
 
 	// Apply the decomposition algorithm
-	cout << "Building hypertree (det-" << iWidth << "-decomp) ... " << endl;
+	cout << "Building generalized hypertree (balsep-" << iWidth << "-decomp) ... " << endl;
 	time(&start);
 	HT = Decomp.buildHypertree();
 	time(&end);
 	if (HT == NULL)
-		cout << "Hypertree of width " << iWidth << " not found in " << difftime(end, start) << " sec." << endl << endl;
+		cout << "Generalized hypertree of width " << iWidth << " not found in " << difftime(end, start) << " sec." << endl << endl;
 	else {
-		cout << "Building hypertree done in " << difftime(end, start) << " sec";
-		cout << " (hypertree-width: " << HT->getHTreeWidth() << ")." << endl << endl;
+		cout << "Building generalized hypertree done in " << difftime(end, start) << " sec";
+		cout << " (generalized-hypertree-width: " << HT->getHTreeWidth() << ")." << endl << endl;
 
 		//HT->shrink(false);
 	}

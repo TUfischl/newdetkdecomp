@@ -167,6 +167,10 @@ public:
 	*/
 	int vcDimension();
 
+	/*
+	* Calculates the arity of the hypergraph.
+	*/
+	int arity() const;
 
 };
 

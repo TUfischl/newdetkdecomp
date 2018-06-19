@@ -14,18 +14,23 @@ allobjects := $(patsubst %.cpp, %.o, $(srcfiles))
 all: bin/detkdecomp bin/localbipkdecomp bin/globalbipkdecomp bin/balsepkdecomp bin/hg-stats
 
 bin/detkdecomp: $(objects) mains/DetKDecompMain.o
+	    @mkdir -p bin
 	    $(CXX) $(CXXFLAGS) $(LDFLAGS) -o bin/detkdecomp ./mains/DetKDecompMain.o $(objects) $(LDLIBS)
 
 bin/localbipkdecomp: $(objects) mains/LocalBipKDecompMain.o
+	    @mkdir -p bin
 	    $(CXX) $(CXXFLAGS) $(LDFLAGS) -o bin/localbipkdecomp ./mains/LocalBipKDecompMain.o $(objects) $(LDLIBS)
 		
 bin/globalbipkdecomp: $(objects) mains/GlobalBipKDecompMain.o
+	    @mkdir -p bin
 	    $(CXX) $(CXXFLAGS) $(LDFLAGS) -o bin/globalbipkdecomp ./mains/GlobalBipKDecompMain.o $(objects) $(LDLIBS)
 		
 bin/balsepkdecomp: $(objects) mains/BalSepKDecompMain.o
+	    @mkdir -p bin
 	    $(CXX) $(CXXFLAGS) $(LDFLAGS) -o bin/balsepkdecomp ./mains/BalSepKDecompMain.o $(objects) $(LDLIBS)
 		
 bin/hg-stats: $(objects) mains/HypergraphStats.o
+	    @mkdir -p bin
 	    $(CXX) $(CXXFLAGS) $(LDFLAGS) -o bin/hg-stats ./mains/HypergraphStats.o $(objects) $(LDLIBS)
 
 depend: .depend
