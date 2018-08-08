@@ -1,7 +1,7 @@
 # NewDetKDecomp
 
 This project includes a library of tools to analyze hypergraph properties and 
-algorithms to detect the (generalized) hypertree width.
+algorithms to detect the (generalized/fractional) hypertree width.
 
 ## Getting Started
 
@@ -10,9 +10,11 @@ on your local machine for development and testing purposes.
 
 ### Prerequisites
 
-In order to compile NewDetKDecomp you only need a C++ compiler supporting C++14.
+In order to compile NewDetKDecomp you need a C++ compiler supporting C++14 and the [Cbc mixed integer programming solver](https://projects.coin-or.org/Cbc).
 
 ### Installing
+
+First download and install coinor-cbc as explained on their web page.
 
 Compile the programs by running make in the root directory.
 
@@ -20,12 +22,13 @@ Compile the programs by running make in the root directory.
 make
 ```
 
-This creates the binaries `hg-tools`, `detkdecomp`, `globalbipkdecomp`, `localbipkdecomp` and `balsepkdecomp`.
+This creates the binaries `hg-tools`, `detkdecomp`, `globalbipkdecomp`, `localbipkdecomp`, `balsepkdecomp`, `fracimprovehd` and `rankfhdecomp` in the bin directory.
 
 ## Authors
 
 
-* **Wolfgang Fischl** - *Algorithms on LocalBip, GlobalBip and BalSep*
+* **Wolfgang Fischl** - *Algorithms on LocalBip, GlobalBip, BalSep, FracImproveHD and RankFHDecomp*
+* **Davide Longo** - *Algorithms on FracImproveHD*
 
 ## Links
 
