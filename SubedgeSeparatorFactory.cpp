@@ -18,27 +18,26 @@ SubedgeSeparatorFactory::SubedgeSeparatorFactory()
 
 SubedgeSeparatorFactory::~SubedgeSeparatorFactory()
 {
-	for (auto edges : MySubSets)
-		delete edges;
+	
 }
 
 
-void SubedgeSeparatorFactory::init(Hypergraph * hg, HE_VEC * comp, HE_VEC * sep, Subedges * subs)
+void SubedgeSeparatorFactory::init(const HypergraphSharedPtr &hg, const HyperedgeVector &comp, const SeparatorSharedPtr &sep, const unique_ptr<Subedges> &subs)
 {
-	hg->resetEdgeLabels();
-	hg->resetVertexLabels();
+	hg->setAllLabels();
 
 	//Label the component
-	for (auto he : *comp)
-		he->labelAll(1);
+	for (auto he : comp)
+		he->setAllLabels(1);
 
 	//Now initialize sub edges of this separator
-	for (auto he : *sep) {
+	for (auto &he : sep->edges()) {
 		MyState.push_back(0);
-		HE_VEC *edges = new HE_VEC();
-		edges->push_back(he);
+		HyperedgeVector edges;
+		edges.push_back(he);
 
-		for (auto sub : *(subs->getSubedges(he))) {
+		subs->init(he);
+		for (auto sub : subs->subedges(he)) {
 			//check if sub edge covers part of component
 			bool found = false;
 			for (auto v : sub->allVertices())
@@ -48,7 +47,7 @@ void SubedgeSeparatorFactory::init(Hypergraph * hg, HE_VEC * comp, HE_VEC * sep,
 				}
 
 			if (found)
-				edges->push_back(sub);
+				edges.push_back(sub);
 		}
 
 		MySubSets.push_back(edges);
@@ -57,25 +56,24 @@ void SubedgeSeparatorFactory::init(Hypergraph * hg, HE_VEC * comp, HE_VEC * sep,
 	MyInit = true;
 }
 
-HE_VEC *SubedgeSeparatorFactory::next() {
+SeparatorSharedPtr SubedgeSeparatorFactory::next() {
 	bool inc = false;
-	HE_VEC *sep = nullptr;
+	SeparatorSharedPtr sep = make_shared<Separator>();
 
 	if (!MyInit)
 		writeErrorMsg("SubedgeSeparatorFactory not initialized!", "SubedgeSeparatorFactory::next()");
 
 	for (int i = 0; i < MyState.size() && !inc; i++) {
 		MyState[i]++;
-		if (MyState[i] < MySubSets[i]->size())
+		if (MyState[i] < MySubSets[i].size())
 			inc = true;
 		else
 			MyState[i] = 0;
 	}
 
 	if (inc) {
-		sep = new HE_VEC(MyState.size());
 		for (int i = 0; i < MyState.size(); i++)
-			(*sep)[i] = (*MySubSets[i])[MyState[i]];
+			sep->push_back(MySubSets[i][MyState[i]]);
 	}
 
 	return sep;

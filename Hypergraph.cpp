@@ -1,166 +1,175 @@
 
 #include <algorithm>
 #include <cmath>
+#include <memory>
 
 #include "Globals.h"
 #include "Hypergraph.h"
 #include "CombinationIterator.h"
+#include "Parser.h"
 
-void Hypergraph::labelReachEdges(Hyperedge * edge)
+void Hypergraph::labelReachEdges(const HyperedgeSharedPtr &edge, int label) const
 {
-	edge->setLabel(1);
+	edge->setLabel(label);
 
-	for (auto e : MyEdgeNeighbors[edge])
+	for (auto e : EdgeNeighbors.at(edge))
 		if (e->getLabel() == 0)
-			labelReachEdges(e);
-}
-
-Hypergraph::Hypergraph()
-{
+			labelReachEdges(e, label);
 }
 
 
-Hypergraph::~Hypergraph()
+void Hypergraph::buildHypergraph(Parser &P)
 {
-	if (MyParent == nullptr) {
-		for (auto e : MyEdges)
-			delete e;
-		for (auto v : MyVertices)
-			delete v;
-	}
-}
+	VertexVector vertices;
+	HyperedgeSharedPtr edge;
 
-void Hypergraph::buildHypergraph(Parser * P)
-{
-	vector<Vertex  *> vertices;
-	Hyperedge* edge;
+	for (int i = 0; i < P.getNbrOfVars(); i++)
+		vertices.push_back(std::make_shared<Vertex>(P.getVariable(i)));
 
-	for (int i = 0; i < P->getNbrOfVars(); i++)
-		vertices.push_back(new Vertex(P->getVariable(i)));
-
-	for (int i = 0; i < P->getNbrOfAtoms(); i++) {
-		edge = new Hyperedge(P->getAtom(i));
-		for (int j = 0; j < P->getNbrOfVars(i); j++) 
-			edge->add(vertices[P->getNextAtomVar()]);
+	for (int i = 0; i < P.getNbrOfAtoms(); i++) {
+		edge = std::make_shared<Hyperedge>(P.getAtom(i));
+		for (int j = 0; j < P.getNbrOfVars(i); j++) 
+			edge->add(vertices[P.getNextAtomVar()]);
 		this->insertEdge(edge);
 	}
 }
 
-bool Hypergraph::hasAllEdges(HE_VEC * edges)
+bool Hypergraph::hasAllEdges(const HyperedgeVector &edges) const
 {
-	for (auto he : *edges)
+	for (auto he : edges)
 		if (!hasEdge(he))
 			return false;
 
 	return true;
 }
 
-bool Hypergraph::hasAllEdges(HE_SET * edges)
+bool Hypergraph::hasAllEdges(const HyperedgeSet &edges) const
 {
-	for (auto he : *edges)
+	for (auto he : edges)
 		if (!hasEdge(he))
 			return false;
 
 	return true;
 }
 
-Hyperedge * Hypergraph::getEdgeByID(int id)
+HyperedgeSharedPtr Hypergraph::getEdgeByID(int id) const
 {
-	for (auto he : MyEdges)
+	for (auto he : Edges)
 		if (he->getId() == id)
 			return he;
+
 	return nullptr;
 }
 
-Vertex * Hypergraph::getVertexByID(int id)
+VertexSharedPtr Hypergraph::getVertexByID(int id) const
 {
-	for (auto v : MyVertices)
+	for (auto v : Vertices)
 		if (v->getId() == id)
 			return v;
 	return nullptr;
 }
 
+void Hypergraph::setVertexLabels(int value) const
+{
+	for (auto v : Vertices)
+		v->setLabel(value);
+}
+
+void Hypergraph::setEdgeLabels(int value) const
+{
+	for (auto he : Edges)
+		he->setLabel(value);
+}
+
+void Hypergraph::setAllLabels(int value) const
+{
+	setVertexLabels(value);
+	setEdgeLabels(value);
+}
+
+/*
 void Hypergraph::resetEdgeLabels(int val)
 {
-	for (auto he : MyEdges)
+	for (auto he : Edges)
 		he->setLabel(val);
 }
 
 void Hypergraph::resetVertexLabels(int val)
 {
-	for (auto v : MyVertices)
+	for (auto v : Vertices)
 		v->setLabel(val);
 }
+*/
 
-void Hypergraph::insertEdge(Hyperedge * edge)
+void Hypergraph::insertEdge(const HyperedgeSharedPtr &edge)
 {
 	if (getEdgeByID(edge->getId()) != nullptr )
 		writeErrorMsg("This hypergraph already contains a Hyperedge with id " + to_string(edge->getId()), "Hypergraph::insertEdge");
 
+	if (dynamic_pointer_cast<Superedge>(edge) != nullptr)
+		CntSuperedges++;
 
-	MyEdges.insert(edge);
-
-	if (edge->isHeavy())
-		MyCntHeavy++;
+	Edges.insert(edge);
 
 	for (auto v : edge->allVertices()) {
-		if (find(MyVertices.begin(), MyVertices.end(), v) == MyVertices.end())
-			MyVertices.insert(v);
-		MyEdgeNeighbors[edge].insert(MyVertexNeighbors[v].cbegin(), MyVertexNeighbors[v].cend());
-		for (auto e : MyVertexNeighbors[v])
-			MyEdgeNeighbors[e].insert(edge);
-		MyVertexNeighbors[v].insert(edge);
+		if (find(Vertices.begin(), Vertices.end(), v) == Vertices.end())
+			Vertices.insert(v);
+		EdgeNeighbors[edge].insert(VertexNeighbors[v].cbegin(), VertexNeighbors[v].cend());
+		for (auto e : VertexNeighbors[v])
+			EdgeNeighbors[e].insert(edge);
+	    VertexNeighbors[v].insert(edge);
 	}
 }
 
-bool Hypergraph::isConnected()
+
+bool Hypergraph::isConnected() const
 {
-	resetEdgeLabels();
+	setAllLabels();
 
 	if (getNbrOfEdges() > 0)
-		labelReachEdges(*MyEdges.begin());
+		labelReachEdges(*Edges.begin());
 	
-	for (auto e : MyEdges)
+	for (auto e : Edges)
 		if (e->getLabel() == 0)
 			return false;
 
 	return true;
 }
 
-void Hypergraph::makeDual(Hypergraph & hg)
+void Hypergraph::makeDual(Hypergraph & hg) const
 {
-	unordered_map<uint, Vertex*> newVertices;
+	unordered_map<uint, VertexSharedPtr> newVertices;
 
 	//Every edge becomes a vertex
-	for (auto e : MyEdges)
-		newVertices[e->getId()] = new Vertex(e->getId(), e->getName());
+	for (auto e : Edges)
+		newVertices[e->getId()] = make_shared<Vertex>(e->getId(), e->getName());
 
 	//Every vertex becomes an edge
-	for (auto v : MyVertices) {
-		Hyperedge* e = new Hyperedge(v->getId(), v->getName());
-		for (auto n : MyVertexNeighbors[v])
+	for (auto v : Vertices) {
+		HyperedgeSharedPtr e = make_shared<Hyperedge>(v->getId(), v->getName());
+		for (auto n : allVertexNeighbors(v))
 			e->add(newVertices[n->getId()]);
 		hg.insertEdge(e);
 	}
 	
 }
 
-HE_VEC Hypergraph::getMCSOrder()
+HyperedgeVector Hypergraph::getMCSOrder()
 {
-	HE_VEC order;
-	HE_VEC candidates;
-	HE_SET::iterator he_iter;
+	HyperedgeVector order;
+	HyperedgeVector candidates;
+	HyperedgeSet::iterator he_iter;
 	uint max_card{ 0 };
 	uint tmp_card{ 0 };
 	
-	Hyperedge *he;
+	HyperedgeSharedPtr he;
 
 	//Reset edge labels (used to determine which hyperedges have been removed)
-	resetEdgeLabels();
+	setEdgeLabels();
 
 	//Select randomly an initial hyperedge
-	auto it = MyEdges.begin();
-	for (int i = 0; i < random_range(0, MyEdges.size() - 1); i++, it++);
+	auto it = Edges.begin();
+	for (int i = 0; i < random_range(0, Edges.size() - 1); i++, it++);
 	he = *it;
 	he->setLabel(1);
 	order.push_back(he);
@@ -168,11 +177,11 @@ HE_VEC Hypergraph::getMCSOrder()
 	//Remove nodes with highest connectivity iteratively
 	do {
 		he = nullptr;
-		he_iter = MyEdges.begin();
+		he_iter = Edges.begin();
 		max_card = 0 ;
 		//find first vertex that has not been removed yet
-		for (; he_iter != MyEdges.end() && (*he_iter)->getLabel() != 0; he_iter++);
-		if (he_iter != MyEdges.end()) {
+		for (; he_iter != Edges.end() && (*he_iter)->getLabel() != 0; he_iter++);
+		if (he_iter != Edges.end()) {
 			//count its connectivity
 			he = *he_iter;
 			for (auto n : allEdgeNeighbors(he))
@@ -181,7 +190,7 @@ HE_VEC Hypergraph::getMCSOrder()
 
 			// Search for the node with highest connectivity, 
 			// i.e., with highest number of neighbours in the set of nodes already removed
-			for (; he_iter != MyEdges.end(); he_iter++) {
+			for (; he_iter != Edges.end(); he_iter++) {
 				he = *he_iter;
 				if (he->getLabel() == 0) {
 					tmp_card = 0;
@@ -208,29 +217,35 @@ HE_VEC Hypergraph::getMCSOrder()
 	return order;
 }
 
-int Hypergraph::degree()
+int Hypergraph::degree() const
 {
 	int maxDegree = 0;
 
-	for (auto v : MyVertices) {
-		int degree = MyVertexNeighbors[v].size();
-		if (MyVertexNeighbors[v].size() > maxDegree) maxDegree = degree;
+	for (const VertexSharedPtr v : Vertices) {
+		int degree;
+		try {
+			degree = VertexNeighbors.at(v).size();
+		}
+		catch (const std::out_of_range& oor) {
+			degree = 0;
+		}
+		if (degree > maxDegree) maxDegree = degree;
 	}
 
 	return maxDegree;
 }
 
-int Hypergraph::bip(int k)
+int Hypergraph::bip(int k) const
 {
 	int maxBip = 0;
-	HE_VEC edges(MyEdges.begin(), MyEdges.end());
+	HyperedgeVector edges(Edges.begin(), Edges.end());
 
-	if (k <= MyEdges.size()) {
-		CombinationIterator comb(MyEdges.size(), k);
+	if (k <= Edges.size()) {
+		CombinationIterator comb(Edges.size(), k);
 		comb.setStage(k);
 		int *indices;
 		while ((indices = comb.next()) != nullptr) {
-			VE_VEC vertices;
+			VertexVector vertices;
 
 			for (auto v : edges[indices[0]]->allVertices()) {
 				bool found = true;
@@ -247,7 +262,7 @@ int Hypergraph::bip(int k)
 		}
 	}
 	else {
-		VE_VEC vertices;
+		VertexVector vertices;
 
 		for (auto v : edges[0]->allVertices()) {
 			bool found = true;
@@ -265,11 +280,11 @@ int Hypergraph::bip(int k)
 	return maxBip;
 }
 
-int Hypergraph::vcDimension()
+int Hypergraph::vcDimension() const
 {
-	int maxVC = (int)floor(log(MyEdges.size()) / log(2));
+	int maxVC = (int)floor(log(Edges.size()) / log(2));
 	int i;
-	VE_VEC vertices(MyVertices.begin(), MyVertices.end());
+	VertexVector vertices(Vertices.begin(), Vertices.end());
 
 	//Find the maximum cardinality of a shattered subset of V
 	for (i = 1; i <= maxVC; i++) {
@@ -281,7 +296,7 @@ int Hypergraph::vcDimension()
 		cit.setStage(i);
 		while ((indices = cit.next()) != nullptr && !shattered) {
 			bool check_x = true;
-			set<Vertex*> set_x;
+			set_type set_x;
 			for (int j = 0; indices[j] != -1; j++)
 				set_x.insert(vertices[indices[j]]);
 			//Collection<String> setX = cit.next();
@@ -295,8 +310,8 @@ int Hypergraph::vcDimension()
 				++iter) {
 
 				bool edge_found = false;
-				for (auto e_it = MyEdges.begin(); e_it != MyEdges.end() && !edge_found; e_it++) {
-					set<Vertex*> help_x;
+				for (auto e_it = Edges.begin(); e_it != Edges.end() && !edge_found; e_it++) {
+					set_type help_x;
 
 					for (auto v : set_x) {
 						if (find((*e_it)->allVertices().begin(), (*e_it)->allVertices().end(), v) != (*e_it)->allVertices().end())
@@ -330,10 +345,12 @@ int Hypergraph::arity() const
 {
 	int ari = 0;
 	int help = 0;
-	for (auto e : MyEdges)
+	for (auto e : Edges)
 		if ((help = e->getNbrOfVertices()) > ari)
 			ari = help;
 
 	return ari;
 }
+
+
 

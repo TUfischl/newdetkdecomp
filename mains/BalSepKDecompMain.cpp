@@ -12,18 +12,19 @@
 // way than would be necessary for det-k-decomp.
 
 
-// localbip-k-decomp V2.0
+// balsep-k-decomp V1.0
 //
 // Reference paper: W. Fischl, G. Gottlob and R. Pichler,
 // Hypergraph Decomposition Methods: From Theory to Practice,
 // Submitted for publication.
 //
+//
 // Note: This program is a prototype implementation and does in no sense
-// claim to be the most efficient way of implementing localbip-k-decomp. Moreover,
+// claim to be the most efficient way of implementing balsep-k-decomp. Moreover,
 // several parts of the code have been developed within an implementation
 // framework for evaluating several decomposition algorithms. These parts of 
 // the code may therefore be unnecessary or are formulated in a more general 
-// way than would be necessary for localbip-k-decomp.
+// way than would be necessary for balsep-k-decomp.
 
 
 #define _CRT_SECURE_NO_DEPRECATE
@@ -40,19 +41,15 @@ using namespace std;
 #include "../Parser.h"
 #include "../Hypergraph.h"
 #include "../Hypertree.h"
-#include "../Component.h"
 #include "../Vertex.h"
 #include "../Hyperedge.h"
 #include "../Globals.h"
 #include "../DetKDecomp.h"
-#include "../Hingetree.h"
-#include "../HingeDecomp.h"
 #include "../BalKDecomp.h"
 #include "../Subedges.h"
 
 void usage(int, char **, int *, bool *);
-Hypertree *decompK(Hypergraph *, int);
-bool verify(Hypergraph *, Hypertree *);
+HypertreeSharedPtr decompK(const HypergraphSharedPtr&, int);
 
 
 char *cInpFile, *cOutFile;
@@ -64,9 +61,10 @@ int main(int argc, char **argv)
 	int iRandomInit, K = 0;
 	bool bDef;
 	time_t start, end;
-	Hypergraph HG;
+	HypergraphSharedPtr HG = make_shared<Hypergraph>();
 	Parser *P;
-	Hypertree *HT;
+	HypertreeSharedPtr HT;
+
 
 	cout << "*** balsep-k-decomp (version 2.0) ***" << endl << endl;
 
@@ -92,26 +90,25 @@ int main(int argc, char **argv)
 	// Build hypergraph
 	cout << "Building hypergraph ... " << endl;
 	time(&start);
-	HG.buildHypergraph(P);
-	if (!HG.isConnected())
+	HG->buildHypergraph(*P);
+	if (!HG->isConnected())
 		cerr << "Warning: Hypergraph is not connected." << endl;
 	time(&end);
 	cout << "Building hypergraph done in " << difftime(end, start) << " sec." << endl << endl;
 	delete P;
 
-	HT = decompK(&HG, K);
+	HT = decompK(HG, K);
 
 	// Check hypertree conditions
 	if (HT != NULL)
 	{
 		cout << "Checking hypertree conditions ... " << endl;
 		time(&start);
-		verify(&HG, HT);
+		HT->verify();
 		time(&end);
 		cout << "Checking hypertree conditions done in " << difftime(end, start) << " sec." << endl << endl;
-		HT->outputToGML(&HG, cOutFile);
+		HT->outputToGML(cOutFile);
 		cout << "GML output written to: " << cOutFile << endl << endl;
-		delete HT;
 	}
 
 	return EXIT_SUCCESS;
@@ -174,10 +171,10 @@ void usage(int argc, char **argv, int *K, bool *bDef)
 }
 
 //BalSeparator
-Hypertree *decompK(Hypergraph *HG, int iWidth)
+HypertreeSharedPtr decompK(const HypergraphSharedPtr &HG, int iWidth)
 {
 	time_t start, end;
-	Hypertree *HT;
+	HypertreeSharedPtr HT;
 	BalKDecomp Decomp(HG, iWidth);
 	BalKDecomp::init(HG, 0);
 
@@ -198,61 +195,6 @@ Hypertree *decompK(Hypergraph *HG, int iWidth)
 	return HT;
 }
 
-
-bool verify(Hypergraph *HG, Hypertree *HT)
-{
-	bool bAllCondSat = true;
-	Vertex *WitnessNode;
-	Hyperedge *WitnessEdge;
-	Hypertree *WitnessTree;
-
-	// Check acyclicity of the hypertree
-	HT->resetLabels();
-	if (HT->isCyclic())
-		writeErrorMsg("Hypertree contains cycles.", "verify");
-	HT->setIDLabels();
-
-	// Check condition 1
-	cout << "Condition 1: ";
-	cout.flush();
-	if ((WitnessEdge = HT->checkCond1(HG)) == NULL)
-		cout << "satisfied." << endl;
-	else {
-		cout << "violated! (see atom \"" << WitnessEdge->getName() << "\")" << endl;
-		bAllCondSat = false;
-	}
-
-	// Check condition 2
-	cout << "Condition 2: ";
-	cout.flush();
-	if ((WitnessNode = HT->checkCond2(HG)) == NULL)
-		cout << "satisfied." << endl;
-	else {
-		cout << "violated! (see variable \"" << WitnessNode->getName() << "\")" << endl;
-		bAllCondSat = false;
-	}
-
-	// Check condition 3
-	cout << "Condition 3: ";
-	cout.flush();
-	if ((WitnessTree = HT->checkCond3(HG)) == NULL)
-		cout << "satisfied." << endl;
-	else {
-		cout << "violated! (see hypertree node \"" << WitnessTree->getLabel() << "\")" << endl;
-		bAllCondSat = false;
-	}
-
-	// Check condition 4
-	cout << "Condition 4: ";
-	cout.flush();
-	if ((WitnessTree = HT->checkCond4(HG)) == NULL)
-		cout << "satisfied." << endl;
-	else
-		cout << "violated!" << endl;
-	// (see hypertree node \"" << WitnessTree->getLabel() << "\")" << endl;
-
-	return bAllCondSat;
-}
 
 
 

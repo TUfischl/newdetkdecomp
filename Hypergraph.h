@@ -3,56 +3,58 @@
 #if !defined(CLS_HYPERGRAPH)
 #define CLS_HYPERGRAPH
 
+#include<memory>
 #include<vector>
 #include<unordered_map>
 #include<unordered_set>
 
+#include "Globals.h"
+#include "Superedge.h"
 #include "Hyperedge.h"
 #include "Parser.h"
+#include "NamedEntity.h"
 
-class Hypergraph
+class Hypergraph : NamedEntity
 { 
 private:
 	// Stores a parent hypergraph (hence, this hypergraph is a subgraph/copy of another graph
 	// The desctructor then keeps edges and vertices
-	Hypergraph *MyParent{ nullptr };
+	HyperedgeSet Edges;
+	VertexSet Vertices;
+	std::shared_ptr<Hypergraph> Parent;
 
-	HE_SET MyEdges;
-	VE_SET MyVertices;
-
-	unordered_map<Vertex *, HE_SET> MyVertexNeighbors;
-	unordered_map<Hyperedge *, HE_SET> MyEdgeNeighbors;
+	unordered_map<VertexSharedPtr, HyperedgeSet> VertexNeighbors;
+	unordered_map<HyperedgeSharedPtr, HyperedgeSet> EdgeNeighbors;
 
 	//Nbr of heavy edges (weight > 1)
-	int MyCntHeavy{ 0 };
+	int CntSuperedges{ 0 };
 
 	// Labels all edges reachable from Edge
-	void labelReachEdges(Hyperedge *edge);
+	void labelReachEdges(const HyperedgeSharedPtr &edge, int label = 1) const;
 
 public:
-	Hypergraph();
-	virtual~Hypergraph();
+	Hypergraph() : NamedEntity() {}
 
 	// Build Hypergraph from a parser object
-	void buildHypergraph(Parser *P);
+	void buildHypergraph(Parser &P);
 
 	// Sets the parent of this hypergraph
-	void setParent(Hypergraph* hg) { MyParent = hg;  }
+	void setParent(const std::shared_ptr<Hypergraph> &hg) { Parent = hg;  }
 
 	// Returns the number of edges in the hypergraph
-	size_t getNbrOfEdges() { return MyEdges.size();  }
+	size_t getNbrOfEdges() const { return Edges.size();  }
 
 	// Returns the number of heavy edges (with weight > 1)
-	int getNbrOfHeavyEdges() { return MyCntHeavy; }
+	int getNbrOfSuperEdges() const { return CntSuperedges; }
 
 	// Returns the number of nodes in the hypergraph
-	size_t getNbrOfVertices() { return MyVertices.size();  }
+	size_t getNbrOfVertices() const { return Vertices.size();  }
 
 	// Returns true if hyperedge is stored in hypergraph
-	bool hasEdge(Hyperedge *he) { return MyEdges.find(he) != MyEdges.end(); }
+	bool hasEdge(const HyperedgeSharedPtr &he) const { return Edges.find(he) != Edges.end(); }
 
-	bool hasAllEdges(HE_SET *edges);
-	bool hasAllEdges(HE_VEC *edges);
+	bool hasAllEdges(const HyperedgeSet &edges) const;
+	bool hasAllEdges(const HyperedgeVector &edges) const;
 
 	// Returns the hyperedge stored at position iPos
 	//Hyperedge *getEdge(int pos) { return MyEdges[pos]; }
@@ -61,41 +63,60 @@ public:
 	//Vertex *getVertex(int pos) { return MyVertices[pos]; }
 
 	// Returns the hyperedge with ID iID
-	Hyperedge *getEdgeByID(int id);
+	HyperedgeSharedPtr getEdgeByID(int id) const;
 
 	// Returns the node with ID iID
-	Vertex *getVertexByID(int id);
+	VertexSharedPtr getVertexByID(int id) const;
+
+	void setVertexLabels(int value = 0) const;
+	void setEdgeLabels(int value = 0) const;
+	void setAllLabels(int value = 0) const;
 
 	// Sets labels of all edges to zero
-	void resetEdgeLabels(int val = 0);
+	//void resetEdgeLabels(int val = 0);
 
 	// Sets labels of all vertices to zero
-	void resetVertexLabels(int val = 0);
+	//void resetVertexLabels(int val = 0);
 
 	// Inserts an hyperedge into the hypergraph
-	void insertEdge(Hyperedge* edge);
+	void insertEdge(const HyperedgeSharedPtr &edge);
 
 	// Checks whether the hypergraph is connected
-	bool isConnected();
+	bool isConnected() const;
 
 	// Transforms the hypergraph into its dual hypergraph
-	void makeDual(Hypergraph& hg);
+	void makeDual(Hypergraph& hg) const;
 
-	auto allEdges() -> decltype(make_iterable(MyEdges.begin(), MyEdges.end()))
+	auto allEdges() -> decltype(make_iterable(Edges.begin(), Edges.end()))
 	{
-		return make_iterable(MyEdges.begin(), MyEdges.end());
+		return make_iterable(Edges.begin(), Edges.end());
 	}
 
-	auto allVertices() -> decltype(make_iterable(MyVertices.begin(), MyVertices.end()))
+	auto allEdges() const -> decltype(make_iterable(Edges.begin(), Edges.end()))
 	{
-		return make_iterable(MyVertices.begin(), MyVertices.end());
+		return make_iterable(Edges.begin(), Edges.end());
 	}
 
-	int nbrOfVertexNeighbors(Vertex *v) { return MyVertexNeighbors[v].size(); }
-
-	auto allVertexNeighbors(Vertex *v) -> decltype(make_iterable(MyVertexNeighbors[v].begin(), MyVertexNeighbors[v].end()))
+	auto allVertices() -> decltype(make_iterable(Vertices.begin(), Vertices.end()))
 	{
-		return make_iterable(MyVertexNeighbors[v].begin(), MyVertexNeighbors[v].end());
+		return make_iterable(Vertices.begin(), Vertices.end());
+	}
+
+	auto allVertices() const -> decltype(make_iterable(Vertices.begin(), Vertices.end()))
+	{
+		return make_iterable(Vertices.begin(), Vertices.end());
+	}
+
+	size_t nbrOfVertexNeighbors(const VertexSharedPtr &v) const { return VertexNeighbors.at(v).size(); }
+
+	auto allVertexNeighbors(const VertexSharedPtr &v) -> decltype(make_iterable(VertexNeighbors[v].begin(), VertexNeighbors[v].end()))
+	{
+		return make_iterable(VertexNeighbors[v].begin(), VertexNeighbors[v].end());
+	}
+
+	auto allVertexNeighbors(const VertexSharedPtr &v) const -> decltype(make_iterable(VertexNeighbors.at(v).begin(), VertexNeighbors.at(v).end()))
+	{
+		return make_iterable(VertexNeighbors.at(v).begin(), VertexNeighbors.at(v).end());
 	}
 
 	/*
@@ -108,11 +129,16 @@ public:
 	}
 	*/
 
-	int nbrOfEdgeNeighbors(Hyperedge *e) { return MyEdgeNeighbors[e].size(); }
+	size_t nbrOfEdgeNeighbors(HyperedgeSharedPtr &e) const { return EdgeNeighbors.at(e).size(); }
 
-	auto allEdgeNeighbors(Hyperedge *e) -> decltype(make_iterable(MyEdgeNeighbors[e].begin(), MyEdgeNeighbors[e].end()))
+	auto allEdgeNeighbors(const HyperedgeSharedPtr &e) -> decltype(make_iterable(EdgeNeighbors[e].begin(), EdgeNeighbors[e].end()))
 	{
-		return make_iterable(MyEdgeNeighbors[e].begin(), MyEdgeNeighbors[e].end());
+		return make_iterable(EdgeNeighbors[e].begin(), EdgeNeighbors[e].end());
+	}
+
+	auto allEdgeNeighbors(const HyperedgeSharedPtr &e) const -> decltype(make_iterable(EdgeNeighbors.at(e).begin(), EdgeNeighbors.at(e).end()))
+	{
+		return make_iterable(EdgeNeighbors.at(e).begin(), EdgeNeighbors.at(e).end());
 	}
 
 	/*
@@ -146,7 +172,7 @@ public:
 	 * originally is proposed for vertices, here we have a dual
 	 * version for hyperedges.
 	 */
-	HE_VEC getMCSOrder();
+	HyperedgeVector getMCSOrder();
 
 	/*
 	 * Hypergraph Properties
@@ -155,23 +181,26 @@ public:
 	 /* 
 	  * Calculates the degree of the hypergraph.
 	  */
-	int degree();
+	int degree() const;
 
 	/*
 	* Calculates the k-BIP  of the hypergraph.
 	*/
-	int bip(int k);
+	int bip(int k) const;
 
 	/*
 	* Calculates the k-BIP  of the hypergraph.
 	*/
-	int vcDimension();
+	int vcDimension() const;
 
 	/*
 	* Calculates the arity of the hypergraph.
 	*/
 	int arity() const;
 
+
 };
+
+using HypergraphSharedPtr = std::shared_ptr<Hypergraph>;
 
 #endif

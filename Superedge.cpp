@@ -1,44 +1,43 @@
+#include <memory>
 #include <list>
 
 #include "Superedge.h"
 #include "Globals.h"
 
-list<Superedge *> MySuperedges;
+list<SuperedgeSharedPtr> MySuperedges;
 
 
-void Superedge::add(HE_VEC *Edges, VE_SET *Vertices)
+void Superedge::add(const HyperedgeVector &Edges, const VertexSet &Vertices)
 {
-	for (auto e : *Edges)
+	for (auto e : Edges)
 		if (!e->isHeavy()) 
-			MyEdges.insert(e);
+			this->Edges.insert(e);
 		else
 		writeErrorMsg("Superedges only from normal edges.", "Superedge::add");	
 
-	for (auto v : *Vertices) 
+	for (auto v : Vertices) 
 		Hyperedge::add(v);
-
-	MyGravity = Edges->size();
 }
 
 
-void Superedge::reduce(VE_SET * vertices)
+void Superedge::reduce(const VertexSet &Vertices)
 {
-	for (auto it = MyVertices.begin(); it != MyVertices.end(); )
-		if (vertices->find(*it) == vertices->end())
-			it = MyVertices.erase(it);
+	for (auto it = this->Vertices.begin(); it != this->Vertices.end(); )
+		if (Vertices.find(*it) == Vertices.end())
+			it = this->Vertices.erase(it);
 		else
 			it++;
 }
 
-Superedge * Superedge::getSuperedge(HE_VEC * Edges, VE_SET *VetComp)
+SuperedgeSharedPtr Superedge::getSuperedge(const HyperedgeVector &Edges, const VertexSet &VetComp)
 {
-	VE_SET vertices;
-	Superedge *sup{ nullptr };
+	VertexSet vertices;
+	SuperedgeSharedPtr sup;
 	bool found;
 
-	for (auto he : *Edges) {
+	for (auto he : Edges) {
 		for (auto v : he->allVertices()) {
-			if (VetComp->find(v) != VetComp->end())
+			if (VetComp.find(v) != VetComp.end())
 				vertices.insert(v);
 		}
 	}
@@ -49,7 +48,7 @@ Superedge * Superedge::getSuperedge(HE_VEC * Edges, VE_SET *VetComp)
 		if (se->getNbrOfVertices() == vertices.size()) {
 			found = true;
 			for (auto it = se->allVertices().begin(); it != se->allVertices().end() && found; it++)
-				if ((*it)->getLabel() != -1 || VetComp->find(*it) == VetComp->end())
+				if ((*it)->getLabel() != -1 || VetComp.find(*it) == VetComp.end())
 					found = false;
 
 			if (found)
@@ -58,13 +57,36 @@ Superedge * Superedge::getSuperedge(HE_VEC * Edges, VE_SET *VetComp)
 
 	string name = "SE";
 	name += to_string(MySuperedges.size() + 1);
-	sup = new Superedge(name);
-	sup->add(Edges,&vertices);
+	sup = std::make_shared<Superedge>(name);
+	sup->add(Edges,vertices);
 	MySuperedges.push_back(sup);
 
 	return sup;
 }
 
-Superedge::~Superedge()
+void Superedge::setAllLabels(int label) const
 {
+	Hyperedge::setAllLabels(label);
+
+	for (auto e : Edges)
+		e->setLabel(label);
+}
+
+std::ostream & operator<<(std::ostream & stream, const std::shared_ptr<Superedge>& super)
+{
+	stream << "Superedge: ";
+	for (auto v_it = super->Vertices.begin(); v_it != super->Vertices.end();) {
+		stream << (*v_it)->getName();
+		v_it++;
+		if (v_it != super->Vertices.end()) cout << ",";
+	}
+	stream << "(";
+	for (auto e_it = super->Edges.begin(); e_it != super->Edges.end();) {
+		stream << (*e_it)->getName();
+		e_it++;
+		if (e_it != super->Edges.end()) cout << ",";
+	}
+	stream << ")";
+
+	return stream;
 }

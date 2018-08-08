@@ -5,6 +5,8 @@
 #include "Hypergraph.h"
 #include "Hypertree.h"
 #include "Superedge.h"
+#include "Separator.h"
+#include "DecompComponent.h"
 
 Decomp::~Decomp()
 {
@@ -14,101 +16,114 @@ Decomp::~Decomp()
 ***Description***
 The method partitions a given set of hyperedges into connected components, i.e., into sets
 of hyperedges in the same component and sets of nodes connecting the components with the
-separator. It is assumed that separating nodes and hyperedges are labeled by -1 and all
-other nodes and hyperedges are labeled by 0.
+separator. 
 
 INPUT:	HEdges: Hyperedges to be partitioned
 OUTPUT: Partitions: Components consisting of sets of hyperedges
 Connectors: Sets of nodes connecting each component with the separator
 return: Number of components
 */
-
-int Decomp::separate(HE_VEC *HEdges, vector<HE_VEC*> &Partitions, vector<VE_VEC*> &Connectors)
+ 
+size_t Decomp::separate(const SeparatorSharedPtr &sep, const HyperedgeVector &edges, vector<DecompComponent> &partitions) const
 {
-	int label;
-	HE_VEC *part;
-	VE_VEC *conn;
+	int label = 0;
+	unordered_map<HyperedgeSharedPtr, int, NamedEntityHash> eLabels;
+	unordered_map<VertexSharedPtr, int, NamedEntityHash> vLabels;
 
-	for (auto he : *HEdges)
-		if (he->getLabel() == 0) {
-			part = new HE_VEC;
-			conn = new VE_VEC;
+	partitions.clear();
 
-			// Search for connected hyperedges
-			label = (int)Partitions.size() + 1;
-			collectReachEdges(he, label, part, conn);
-
-			Partitions.push_back(part);
-			Connectors.push_back(conn);
-
-			//Relabel connecting vertices
-			for (auto v : *conn)
-				v->setLabel(-1);
-		}
-
-	return (int)Partitions.size();
-}
-
-Hypertree * Decomp::decompTrivial(HE_VEC * HEdges, VE_VEC * Connector)
-{
-	Hypertree *htree{ nullptr };
-	size_t cnt_edges{ HEdges->size() };
-	int total_gravity{ totalGravity(*HEdges) };
-	
-	// Stop if the hypergraph can be decomposed into a single hypertree-node
-	if (total_gravity <= MyK) {
-		for (auto he : *HEdges)
-			he->setLabel(-1);
-		return getHTNode(HEdges, Connector, nullptr);
+	//First set the label for all seperating vertices and edges
+	for (auto &e : sep->allEdges()) {
+		eLabels[e] = -1;
+		for (auto &v : e->allVertices())
+			vLabels[v] = -1;
 	}
 
-	if (Connector == nullptr || Connector->size() == 0) {
+	for (auto &he : edges)
+		if (eLabels[he] == 0) {
+			DecompComponent comp(static_pointer_cast<BaseSeparator>(sep));
+			label++;
+
+			comp.add(he);
+			eLabels[he] = label;
+			
+			//find all edges reachable from the current component
+			for (int i = 0; i < comp.size(); i++) {
+				for (auto &v : comp[i]->allVertices()) {
+					if (vLabels[v] == 0) {
+						vLabels[v] = label;
+						for (auto &he : MyHg->allVertexNeighbors(v))
+							if (eLabels[he] == 0) {
+								eLabels[he] = label;
+								comp.add(he);
+							}
+					}
+				}
+			}
+
+			partitions.push_back(comp);
+		}
+
+	return partitions.size();
+}
+
+HypertreeSharedPtr Decomp::decompTrivial(const HyperedgeVector &edges, const VertexSet &connector) const
+{
+	HypertreeSharedPtr htree{ nullptr };
+	size_t total_weight = 0;
+
+	for (auto &e : edges)
+		total_weight += e->getWeight();
+	
+	// Stop if the hypergraph can be decomposed into a single hypertree-node
+	if (total_weight <= MyK)
+		return getHTNode(edges, edges, connector);
+
+	if (connector.size() == 0) {
 		// check if there are heavy edges (weight != cnt)
-		if (cnt_edges == total_gravity) {
+		if (edges.size() == total_weight) {
 			// Stop if the hypergraph can be decomposed into two hypertree-nodes 
-			if ((cnt_edges > 1) && ((int)ceil(cnt_edges / 2.0) <= MyK)) {
-				HE_VEC part;
-				int half = (int)cnt_edges / 2;
+			if ((edges.size() > 1) && ((int)ceil(edges.size() / 2.0) <= MyK)) {
+				HyperedgeVector part;
+				int half = (int)edges.size() / 2;
 				int i = 0;
-				for (auto he : *HEdges) {
+				for (auto &he : edges) {
 					part.push_back(he);
-					he->setLabel(-1);
-					if (i == half - 1) {
-						htree = getHTNode(&part);
+					if (i == half) {
+						htree = getHTNode(edges, part);
 						part.clear();
 					}
 					i++;
 				}
 
-				htree->insChild(getHTNode(&part));
+				htree->insChild(getHTNode(edges, part));
 
 				return htree;
 			}
 		}
 		else {
 			// decompose in 2 hypertree nodes if possible
-			if (total_gravity <= MyK * 2) {
-				HE_VEC part;
-				Hyperedge* heavy{ nullptr };
+			if (total_weight <= MyK * 2) {
+				HyperedgeVector part;
+				SuperedgeSharedPtr heavy{ nullptr };
 				// find the first heavy edge
-				for (auto it = HEdges->begin(); heavy == nullptr && it != HEdges->end(); it++)
+				for (auto it = edges.begin(); heavy == nullptr && it != edges.end(); it++)
 					if ((*it)->isHeavy())
-						heavy = *it;
+						heavy = dynamic_pointer_cast<Superedge>(*it);
 
 				// put all other edges into the first bag
-				for (auto he : *HEdges)
-					if (he != heavy) {
+				for (auto &he : edges)
+					if (he != heavy) 
 						part.push_back(he);
-						he->setLabel(-1);
-					}
+
 				
 				// create htree node
-				htree = getHTNode(&part);
+				htree = getHTNode(edges, part);
 
 				// create second htree node
 				part.clear();
 				part.push_back(heavy);
-				htree->insChild(getHTNode(&part));
+				htree->insChild(getHTNode(edges,part));
 
 				return htree;
 			}
@@ -128,91 +143,60 @@ inserts the nodes of hyperedges labeled by -1 to the chi-set, inserts the nodes 
 ChiConnect to the chi-set, and adds the given hypertrees as subtrees. It is assumed that
 hyperedges that should be covered by the chi-set are labeled by -1.
 
-INPUT:	HEdges: Hyperedges to be inserted into the lambda-set
+INPUT:	lambda: A separator (hyperedges) to be inserted into the lambda-set
 ChiConnect: Connector nodes that must be a subset of the chi-set
 Subtrees: Subtrees of the new hypertree-node
 OUTPUT: return: Labeled hypertree-node
 */
 
-Hypertree *Decomp::getHTNode(HE_VEC *HEdges, VE_VEC *ChiConnect, list<Hypertree *> *Subtrees, Superedge* Super)
+HypertreeSharedPtr Decomp::getHTNode(const HyperedgeVector &comp, const HyperedgeVector &lambda, const VertexSet &ChiConnect, const list<HypertreeSharedPtr> &Subtrees, const SuperedgeSharedPtr &Super) const
 {
-	Hypertree *HTree;
+	HypertreeSharedPtr HTree = make_shared<Hypertree>(MyHg);
+	VertexSet vcomp;
 
-	// Create a new hypertree-node
-	HTree = new Hypertree(MyHg);
-	if (HTree == nullptr)
-		writeErrorMsg("Error assigning memory.", "DetKDecomp::getHTNode");
+	for (auto &e : comp)
+		for (auto &v : e->allVertices())
+			vcomp.insert(v);
+
 
 	// Insert hyperedges and nodes into the hypertree-node
-	for (auto it = HEdges->cbegin(); it != HEdges->cend(); it++) {
-		HTree->insLambda(*it);
-		if ((*it)->getLabel() == -1)
-			for (auto v : (*it)->allVertices())
-				if (Super == nullptr || Super->find(v) != nullptr)
-					HTree->insChi(v);
+	for (auto &e : lambda) {
+		HTree->insLambda(e);
+		for (auto &v : e->allVertices())
+			if (vcomp.find(v) != vcomp.end() && (Super == nullptr || Super->find(v) != nullptr))
+				HTree->insChi(v);
 	}
 
-	if (ChiConnect != nullptr)
-		// Insert additional chi-labels to guarantee 
-		for (auto it = ChiConnect->cbegin(); it != ChiConnect->cend(); it++)
-			HTree->insChi(*it);
+	// Insert additional chi-labels to guarantee connectedness
+	for (auto &v : ChiConnect)
+		HTree->insChi(v);
 
-	if (Subtrees != nullptr)
-		// Insert children into the hypertree-node
-		for (auto it = Subtrees->cbegin(); it != Subtrees->cend(); it++)
-			//Super Edges are for the balanced separator algorithm
-			if (Super != nullptr) {
-				Hypertree* root = (*it)->findNodeByLambda(Super);
-				if (root != nullptr) {
-					root->setRoot();
-					for (Hypertree* child : root->allChildren())
-						HTree->insChild(child);
-					root->remChildren(false);
-					delete root;
-				}
-				else
-					writeErrorMsg("Superedge not found in the subtree.", "BalKDecomp::getHTNode");
+	// Insert children into the hypertree-node
+	for (auto &subtree : Subtrees)
+		//Super Edges are for the balanced separator algorithm
+		if (Super != nullptr) {
+			//cout << Super << " --- " << comp << endl;
+			HypertreeSharedPtr root = (subtree)->findNodeByLambda(Super);
+			if (root != nullptr) {
+				root->setRoot();
+				for (auto &child : root->allChildren())
+					HTree->insChild(child);
+				root->remChildren(false);
 			}
 			else
-				HTree->insChild(*it);
+				writeErrorMsg("Superedge not found in the subtree.", "BalKDecomp::getHTNode");
+		}
+		else
+			HTree->insChild(subtree);
 
 	return HTree;
 }
 
-
-
-/*
-***Description***
-The method labels all unlabeled hyperedges reachable from Edge with iLabel. It is assumed that
-all separating nodes/edges are labeled by -1 and all other nodes/edges are labeled by 0.
-
-INPUT:	Edge: Hyperedge
-iLabel: Label of all hyperedges in the same component as Edge
-OUTPUT: Egdes: List of all hyperedges in the same component as Edge
-Connector: List of nodes connecting the component with the separator
-*/
-
-void Decomp::collectReachEdges(Hyperedge *Edge, int Label, HE_VEC *Edges, VE_VEC *Connector)
+HypertreeSharedPtr Decomp::getCutNode(int label, const HyperedgeVector & lambda, const VertexSet & ChiConnect) const
 {
-	Edge->setLabel(Label);
-	Edges->push_back(Edge);
-
-	for (int i = 0; i < Edges->size(); i++) {
-		for (auto v : (*Edges)[i]->allVertices()) {
-			switch (v->getLabel()) {
-			case 0:	 // Collect hyperedges connected via each node
-				v->setLabel(Label);
-				for (auto he : MyHg->allVertexNeighbors(v))
-					if (he->getLabel() == 0) {
-						he->setLabel(Label);
-						Edges->push_back(he);
-					}
-				break;
-			case -1: // Node connects the component with the separator
-				Connector->push_back(v);
-				v->setLabel(-2);
-				break;
-			}
-		}
-	}
+	HypertreeSharedPtr htree = getHTNode(lambda, lambda, ChiConnect);
+	htree->setCut();
+	htree->setLabel(label);
+	return htree;
 }
+

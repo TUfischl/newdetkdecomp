@@ -64,7 +64,7 @@ Parser::~Parser()
 //////////////////////////////////////////////////////////////////////
 
 
-void Parser::SyntaxError(const char *cMsg, bool bLineNbr)
+void Parser::SyntaxError(const char *cMsg, bool bLineNbr) 
 {
 	if (bLineNbr)
 		cerr << "Error in Ln " << iMyLineNumber << ", Col " << iMyColumnNumber << ": " << cMsg << endl;
@@ -74,7 +74,7 @@ void Parser::SyntaxError(const char *cMsg, bool bLineNbr)
 }
 
 
-void Parser::SyntaxWarning(const char *cMsg, bool bLineNbr)
+void Parser::SyntaxWarning(const char *cMsg, bool bLineNbr) 
 {
 	if (bLineNbr)
 		cerr << "Warning in Ln " << iMyLineNumber << ", Col " << iMyColumnNumber << ": " << cMsg << endl;
@@ -628,19 +628,19 @@ void Parser::parseFile(const char *cNameOfFile)
 }
 
 
-int Parser::getNbrOfAtoms()
+int Parser::getNbrOfAtoms()  const
 {
 	return (int)MyAtoms.size();
 }
 
 
-int Parser::getNbrOfVars()
+int Parser::getNbrOfVars() const
 {
 	return (int)MyVariables.size();
 }
 
 
-int Parser::getNbrOfVars(int iAtom)
+int Parser::getNbrOfVars(int iAtom) const
 {
 	if (iAtom >= (int)MyAtomVars.size()) {
 		writeErrorMsg("Position not available.", "Parser::getNbrOfVars");
@@ -651,7 +651,7 @@ int Parser::getNbrOfVars(int iAtom)
 }
 
 
-int Parser::getNbrOfAtoms(int iVar)
+int Parser::getNbrOfAtoms(int iVar) const
 {
 	if (iVar >= (int)MyVarAtoms.size()) {
 		writeErrorMsg("Position not available.", "Parser::getNbrOfAtoms");
@@ -662,7 +662,7 @@ int Parser::getNbrOfAtoms(int iVar)
 }
 
 
-int Parser::getNbrOfAtomNeighbours(int iAtom)
+int Parser::getNbrOfAtomNeighbours(int iAtom) const
 {
 	if (iAtom >= (int)MyAtomNeighbours.size()) {
 		writeErrorMsg("Position not available.", "Parser::getNbrOfAtomNeighbours");
@@ -673,7 +673,7 @@ int Parser::getNbrOfAtomNeighbours(int iAtom)
 }
 
 
-int Parser::getNbrOfVarNeighbours(int iVar)
+int Parser::getNbrOfVarNeighbours(int iVar) const
 {
 	if (iVar >= (int)MyVarNeighbours.size()) {
 		writeErrorMsg("Position not available.", "Parser::getNbrOfVarNeighbours");
@@ -684,13 +684,13 @@ int Parser::getNbrOfVarNeighbours(int iVar)
 }
 
 
-int Parser::getNbrOfWarnings()
+int Parser::getNbrOfWarnings() const
 {
 	return iMyNbrOfWarnings;
 }
 
 
-char *Parser::getAtom(int iAtom)
+char *Parser::getAtom(int iAtom) const
 {
 	if (iAtom >= (int)MyAtoms.size()) {
 		writeErrorMsg("Position not available.", "Parser::getAtom");
@@ -701,7 +701,7 @@ char *Parser::getAtom(int iAtom)
 }
 
 
-char *Parser::getVariable(int iVar)
+char *Parser::getVariable(int iVar) const
 {
 	if (iVar >= (int)MyVariables.size()) {
 		writeErrorMsg("Position not available.", "Parser::getVariable");
@@ -739,7 +739,7 @@ int Parser::getNextAtomVar(bool bReset)
 }
 
 
-int Parser::getNextVarAtom(bool bReset)
+int Parser::getNextVarAtom(bool bReset) 
 {
 	static vector<set<int> *>::iterator VectorIter;
 	static set<int>::iterator SetIter;

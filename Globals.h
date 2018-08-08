@@ -4,22 +4,13 @@
 #define CLS_GLOBALS
 
 #include<string>
-#include<unordered_set>
-#include<set>
 #include<vector>
-
-//#include "Component.h"
-
-class Component;
-class Vertex;
-class Hyperedge;
 
 using namespace std;
 using uint = unsigned int;
 
-
+/*
 struct ComponentHash {
-	size_t operator()(const Component *c) const;
 	size_t operator()(const Vertex *c) const;
 	size_t operator()(const Hyperedge *c) const;
 };
@@ -29,9 +20,9 @@ using VE_VEC = vector<Vertex *>;
 using VE_SET = unordered_set<Vertex *,ComponentHash>;
 using HE_VEC = vector<Hyperedge *>;
 using HE_SET = unordered_set<Hyperedge *,ComponentHash>;
+*/
 
-typedef set<Vertex *> set_type;
-typedef set<set_type> powerset_type;
+
 
 // Writes an error message to the standard error output stream
 void writeErrorMsg(const string& cMessage, const string& cLocation, bool bExitProgram = true);
@@ -39,25 +30,11 @@ void writeErrorMsg(const string& cMessage, const string& cLocation, bool bExitPr
 // Sorts an array of pointers in non-decreasing order according to a given int array
 void sortPointers(void **Ptr, int *iEval, int iL, int iR);
 
-// Checks whether Set1 is a subset of Set2
-bool isSubset(VE_SET &Set1, VE_SET &Set2);
-
-// Checks whether Set1 is a subset of Set2
-bool isSubset(HE_SET &Set1, HE_SET &Set2);
-
 // Returns a random integer between iLB and iUB
 int random_range(int iLB, int iUB);
 
 // Converts an unsigned integer number into a string
 char *uitoa(unsigned int iNumber, char *cString);
-
-// Outputs a set of hyperedges
-std::ostream& operator<< (std::ostream &out, const HE_VEC &he);
-
-// Outputs a set of vertices
-std::ostream& operator<< (std::ostream &out, const VE_SET &v);
-
-powerset_type powerset(set_type const& set);
 
 template<class T>
 struct Iterable

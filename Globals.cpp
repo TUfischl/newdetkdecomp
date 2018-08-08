@@ -1,13 +1,7 @@
 #include <iostream>
-#include <set>
-#include <algorithm>
 #include <vector>
-#include <iterator>
 
-#include "Component.h"
 #include "Globals.h"
-#include "Vertex.h"
-#include "Hyperedge.h"
 
 void writeErrorMsg(const string & cMessage, const string & cLocation, bool bExitProgram)
 {
@@ -69,23 +63,6 @@ void sortPointers(void **Ptr, int *iEval, int iL, int iR)
 	}
 }
 
-bool isSubset(VE_SET &Set1, VE_SET &Set2)
-{
-	// Set labels of all nodes in Set1 to 0
-	for (auto v : Set1)
-		v->setLabel(0);
-	// Set labels of all nodes in Set2 to 1
-	for (auto v : Set2)
-		v->setLabel(1);
-
-	// Check whether all node labels in Set1 are 1; if so, Set1 is a subset of Set2
-	for (auto v : Set1)
-		if (v->getLabel() == 0)
-			return false;
-
-	return true;
-}
-
 char *uitoa(unsigned int iNumber, char *cString)
 {
 	int iPos = 0;
@@ -108,49 +85,10 @@ char *uitoa(unsigned int iNumber, char *cString)
 	return cString;
 }
 
-std::ostream & operator<<(std::ostream & out, const HE_VEC & he)
-{
-	out << "(";
-	for (auto it = he.cbegin(); it != he.cend();) {
-		out << (*it)->getName();
-		if (++it != he.cend())
-			out << ",";
-	}
-	out << ")";
-
-	return out;
-}
-
-std::ostream & operator<<(std::ostream & out, const VE_SET & v)
-{
-	out << "(";
-	for (auto it = v.cbegin(); it != v.cend();) {
-		out << (*it)->getName();
-		if (++it != v.cend())
-			out << ",";
-	}
-	out << ")";
-
-	return out;
-}
 
 
-bool isSubset(HE_SET &Set1, HE_SET &Set2)
-{
-	// Set labels of all nodes in Set1 to 0
-	for (auto he : Set1 )
-		he->setLabel(0);
-	// Set labels of all nodes in Set2 to 1
-	for (auto he : Set2)
-		he->setLabel(1);
 
-	// Check whether all node labels in Set1 are 1; if so, Set1 is a subset of Set2
-	for (auto he : Set1)
-		if (he->getLabel() == 0)
-			return false;
 
-	return true;
-}
 
 int random_range(int iLB, int iUB)
 {
@@ -161,66 +99,4 @@ int random_range(int iLB, int iUB)
 
 	iRange = (iUB - iLB) + 1;
 	return iLB + (int)(iRange * (rand() / (RAND_MAX + 1.0)));
-}
-
-powerset_type powerset(set_type const& set)
-{
-	typedef set_type::const_iterator set_iter;
-	typedef std::vector<set_iter> vec;
-	typedef vec::iterator vec_iter;
-
-	struct local
-	{
-		static Vertex* dereference(set_iter v) { return *v; }
-	};
-
-	powerset_type result;
-
-	vec elements;
-	do
-	{
-		set_type tmp;
-		transform(elements.begin(), elements.end(),
-			std::inserter(tmp, tmp.end()),
-			local::dereference);
-		result.insert(tmp);
-		if (!elements.empty() && ++elements.back() == set.end())
-		{
-			elements.pop_back();
-		}
-		else
-		{
-			set_iter iter;
-			if (elements.empty())
-			{
-				iter = set.begin();
-			}
-			else
-			{
-				iter = elements.back();
-				++iter;
-			}
-			for (; iter != set.end(); ++iter)
-			{
-				elements.push_back(iter);
-			}
-		}
-	} while (!elements.empty());
-
-	return result;
-}
-
-size_t ComponentHash::operator()(const Component * c) const
-{
-	return std::hash<uint>()(c->getId());
-}
-
-size_t ComponentHash::operator()(const Vertex * c) const
-{
-        return std::hash<uint>()(c->getId());
-}
-
-size_t ComponentHash::operator()(const Hyperedge * c) const
-{
-        return std::hash<uint>()(c->getId());
 }

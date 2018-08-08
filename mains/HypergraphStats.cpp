@@ -40,19 +40,14 @@ using namespace std;
 #include "../Parser.h"
 #include "../Hypergraph.h"
 #include "../Hypertree.h"
-#include "../Component.h"
 #include "../Vertex.h"
 #include "../Hyperedge.h"
 #include "../Globals.h"
 #include "../DetKDecomp.h"
-#include "../Hingetree.h"
-#include "../HingeDecomp.h"
 #include "../BalKDecomp.h"
 #include "../Subedges.h"
 
 void usage(int, char **, int *, bool *);
-Hypertree *decompK(Hypergraph *, int);
-bool verify(Hypergraph *, Hypertree *);
 
 
 char *cInpFile, *cOutFile;
@@ -92,19 +87,24 @@ int main(int argc, char **argv)
 	// Build hypergraph
 	cout << "Building hypergraph ... " << endl;
 	time(&start);
-	HG.buildHypergraph(P);
+	HG.buildHypergraph(*P);
 	if (!HG.isConnected())
 		cerr << "Warning: Hypergraph is not connected." << endl;
 	time(&end);
 	cout << "Building hypergraph done in " << difftime(end, start) << " sec." << endl << endl;
 	delete P;
 
-        cout << "Arity: " << HG.arity() << endl;
+	cout << "Vertices: " << HG.getNbrOfVertices() << endl;
+	cout << "Edges: " << HG.getNbrOfEdges() << endl;
+	
 	cout << "Degree: " << HG.degree() << endl; 
+	cout << "Arity: " << HG.arity() << endl;
 	cout << "BIP: " << HG.bip(2) << endl;
 	cout << "3-BIP: " << HG.bip(3) << endl;
 	cout << "4-BIP: " << HG.bip(4) << endl;
 	cout << "VC-dim: " << HG.vcDimension() << endl;
+        
+        
 
 	return EXIT_SUCCESS;
 }

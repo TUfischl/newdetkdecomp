@@ -21,6 +21,7 @@ using namespace std;
 #include "Globals.h"
 #include "Subedges.h"
 #include "SubedgeSeparatorFactory.h"
+#include "DecompComponent.h"
 
 
 //////////////////////////////////////////////////////////////////////
@@ -28,10 +29,10 @@ using namespace std;
 //////////////////////////////////////////////////////////////////////
 
 
-DetKDecomp::DetKDecomp(Hypergraph *HGraph, int k, bool bip) : Decomp(HGraph, k), MyBIP{ bip }
+DetKDecomp::DetKDecomp(const HypergraphSharedPtr &HGraph, int k, bool bip) : Decomp(HGraph, k), MyBIP{ bip }
 {
 	if (MyBIP)
-		MySubedges = new Subedges(HGraph, k);
+		MySubedges = make_unique<Subedges>(HGraph, k);
 }
 
 
@@ -60,14 +61,14 @@ OUTPUT: Set: Selection of hyperedges in Edges such that all nodes in Nodes are c
 		return: Number of selected hyperedges; -1 if nodes cannot be covered
 */
 
-int DetKDecomp::setInitSubset(VE_VEC *Vertices, HE_VEC &Edges, vector<int> &Set, vector<bool> &InComp, vector<int> &CovWeights)
+int DetKDecomp::setInitSubset(const VertexSet &Vertices, HyperedgeVector &Edges, vector<int> &Set, vector<bool> &InComp, vector<int> &CovWeights) const
 {
-	int uncov{ (int)Vertices->size() };
+	int uncov{ (int)Vertices.size() };
 	int weight, e;
 
 	// Reset node labels
-	MyHg->resetVertexLabels(-1);
-	for(auto v : *Vertices)
+	MyHg->setVertexLabels(-1);
+	for(auto v : Vertices)
 		v->setLabel(0);
 
 	// Sort hyperedges according to their weight,
@@ -82,7 +83,7 @@ int DetKDecomp::setInitSubset(VE_VEC *Vertices, HE_VEC &Edges, vector<int> &Set,
 		e++;
 	}
 
-	sortVectors<Hyperedge*>(Edges, CovWeights, 0, (int)Edges.size()-1);
+	sortVectors<HyperedgeSharedPtr>(Edges, CovWeights, 0, (int)Edges.size()-1);
 
 	// Reset bInComp and summarize weights
 	for(int i=0; i < (int)Edges.size(); i++) {
@@ -115,20 +116,18 @@ OUTPUT: Set: Selection of hyperedges in Edges such that all nodes in Nodes are c
 		return: Number of selected hyperedges; -1 if there is no alternative selection
 */
 
-int DetKDecomp::setNextSubset(VE_VEC *Vertices, HE_VEC &Edges, vector<int> &Set, vector<bool> &InComp, vector<int> &CovWeights)
+int DetKDecomp::setNextSubset(const VertexSet &Vertices, HyperedgeVector &Edges, vector<int> &Set, vector<bool> &InComp, vector<int> &CovWeights) const
 {
-	int iUncov;
-
-	MyHg->resetVertexLabels(-1);
-	for(iUncov=0; iUncov < Vertices->size(); iUncov++)
-		Vertices->at(iUncov)->setLabel(0);
+	MyHg->setVertexLabels(-1);
+	for(auto v : Vertices)
+		v->setLabel(0);
 
 	// Select the next subset of at most iMyK hyperedges
-	return coverNodes(Edges, Set, InComp, CovWeights, iUncov, true);
+	return coverNodes(Edges, Set, InComp, CovWeights, Vertices.size(), true);
 }
 
 
-int DetKDecomp::coverNodes(HE_VEC &Edges, vector<int> &Set, vector<bool> &InComp, vector<int> &CovWeights, int Uncovered, bool Reconstr)
+int DetKDecomp::coverNodes(HyperedgeVector &Edges, vector<int> &Set, vector<bool> &InComp, vector<int> &CovWeights, size_t Uncovered, bool Reconstr) const
 {
 	int i;
 
@@ -286,29 +285,30 @@ OUTPUT: Inner: Inner hyperedges not containing a boundary node
 		hyperedges starting at this index are outside the given set.
 */
 
-size_t DetKDecomp::divideCompEdges(HE_VEC *HEdges, VE_VEC *Vertices, HE_VEC &Inner, HE_VEC &Bound)
+size_t DetKDecomp::divideCompEdges(const HyperedgeVector &HEdges, const VertexSet &Vertices, HyperedgeVector &Inner, HyperedgeVector &Bound) const
 {
 	bool covered;
-	size_t cnt_edges{ HEdges->size() };
-	list<Hyperedge *> innerb, outerb;
+	size_t cnt_edges{ HEdges.size() };
+	list<HyperedgeSharedPtr> innerb, outerb;
+	unordered_map<HyperedgeSharedPtr, int> edgeLabels;
+	unordered_map<VertexSharedPtr, int> vertexLabels;
 	
-	MyHg->resetEdgeLabels();
-	for(auto he : *HEdges)
-		he->setLabel(1);
+	for (auto he : HEdges)
+		edgeLabels[he] = 1;
 
 	// Compute the hyperedges containing a boundary node and store them
 	// in InnerB if they are contained in the given set and in OuterB otherwise
-	for(auto v : *Vertices)
+	for(auto v : Vertices)
 		for(auto he : MyHg->allVertexNeighbors(v)) {
 			// Only use normal edges for separators
 			if (!he->isHeavy()) {
-				switch (he->getLabel()) {
+				switch (edgeLabels[he]) {
 				case 0:	// Hyperedge is not contained in HEdges
-					he->setLabel(-1);
+					edgeLabels[he]  = -1;
 					outerb.push_back(he);
 					break;
 				case 1:	// Hyperedge is contained in HEdges
-					he->setLabel(-1);
+					edgeLabels[he] = -1;
 					innerb.push_back(he);
 					break;
 				}
@@ -316,14 +316,13 @@ size_t DetKDecomp::divideCompEdges(HE_VEC *HEdges, VE_VEC *Vertices, HE_VEC &Inn
 		}
 
 	// Store hyperedges not containing a boundary node in the array
-	for (auto he : *HEdges)
-		if (he->getLabel() > 0)
+	for (auto he : HEdges)
+		if (edgeLabels[he] > 0)
 			Inner.push_back(he);
 
-	MyHg->resetVertexLabels();
-	MyHg->resetEdgeLabels();
+	edgeLabels.clear();
 	for(auto he : outerb)
-		he->setLabel(1);
+		edgeLabels[he] = 1;
 
 	
 
@@ -331,21 +330,21 @@ size_t DetKDecomp::divideCompEdges(HE_VEC *HEdges, VE_VEC *Vertices, HE_VEC &Inn
 	// boundary nodes is covered by some other hyperedge in OuterB
 	for(auto it=outerb.begin(); it != outerb.end(); it++) {
 		// Label all boundary nodes by 1
-		for (auto v : *Vertices)
-			v->setLabel(1);
+		for (auto v : Vertices)
+			vertexLabels[v] = (1);
 
 		// Reset the labels of all nodes of the actual hyperedge in OuterB
 		for(auto v : (*it)->allVertices())
-			v->setLabel(0);
+			vertexLabels[v] = 0;
 
 		// Check whether some hyperedge in OuterB in the neighbourhood of the actual hyperedge
 		// contains no node labeled with 1; in this case it can be removed from OuterB since its 
 		// boundery nodes are covered by the actual hyperedge in OuterB
 		for(auto he : MyHg->allEdgeNeighbors(*it))
-			if(he->getLabel() != 0) {
+			if(edgeLabels[he] != 0) {
 				covered = true;
 				for(auto v : he->allVertices())
-					if (v->getLabel() != 0) {
+					if (vertexLabels[v] != 0) {
 						covered = false;
 						break;
 					}
@@ -363,6 +362,17 @@ size_t DetKDecomp::divideCompEdges(HE_VEC *HEdges, VE_VEC *Vertices, HE_VEC &Inn
 	return innerb.size();
 }
 
+CompCache & DetKDecomp::getSepParts(SeparatorSharedPtr & sep) const
+{
+	for (auto t : MyTriedSeps)
+		if (t.first == sep) {
+			sep = t.first;
+			break;
+		}
+	
+	return MyTriedSeps[sep];
+}
+
 
 /*
 ***Description***
@@ -377,7 +387,7 @@ OUTPUT: Separator: Stored separator
 		FailParts: List of undecomposable partitions
 		return: true if separator was found; otherwise false
 */
-
+/*
 bool DetKDecomp::getSepParts(int SepSize, HE_VEC **Separator, list<Hyperedge *> **SuccParts, list<Hyperedge *> **FailParts)
 {
 	int i;
@@ -411,7 +421,7 @@ bool DetKDecomp::getSepParts(int SepSize, HE_VEC **Separator, list<Hyperedge *> 
 
 	return false;
 }
-
+*/
 
 /*
 ***Description***
@@ -445,14 +455,13 @@ INPUT:	HEdges: Hyperedges in the subgraph
 		iRecLevel: Recursion level
 OUTPUT: return: Hypertree decomposition of HEdges
 */
-
-bool DetKDecomp::covers(HE_VEC * Edges, VE_VEC * Vertices)
+bool DetKDecomp::covers(const HyperedgeVector &Edges, const VertexSet &Vertices) const
 {
 	bool found;
 
-	for (auto v : *Vertices) {
+	for (auto v : Vertices) {
 		found = false;
-		for (auto e : *Edges) {
+		for (auto e : Edges) {
 			if (e->find(v) != nullptr) {
 				found = true;
 				break;
@@ -466,25 +475,22 @@ bool DetKDecomp::covers(HE_VEC * Edges, VE_VEC * Vertices)
 	return true;
 }
 
-Hypertree *DetKDecomp::decomp(HE_VEC *HEdges, VE_VEC *Connector, int RecLevel)
+HypertreeSharedPtr DetKDecomp::decomp(const HyperedgeVector &HEdges, const VertexSet &Connector, int RecLevel) const
 {
 	int i, j;
 	
-
-	list<Hypertree *> Subtrees;
 	list<Hypertree *>::iterator TreeIter;
 	
-	HE_VEC *separator, *sub_separator{ nullptr };
+	SeparatorSharedPtr separator{ nullptr };
 	vector<int> cov_sep_set, cov_weights;
-	vector<bool> in_comp, cut_parts;
-	size_t cnt_edges{ HEdges->size() };
-	int comp_end, nbr_sel_cov, i_add, sep_size, nbr_of_parts;
-	bool add_edge, reused_sep, fail_sep, sub_edge;
-    Hypertree *htree{ nullptr };
-	vector<VE_VEC *> child_connectors;
-	vector<HE_VEC *> partitions;
-	HE_VEC inner_edges, bound_edges, add_edges;
-	list<Hyperedge *> *succ_parts, *fail_parts;
+	vector<bool> in_comp;
+	size_t cnt_edges{ HEdges.size() };
+	int comp_end, nbr_sel_cov, i_add, sep_size;
+	size_t nbr_of_parts;
+	bool add_edge, fail_sep, sub_edge;
+    HypertreeSharedPtr htree{ nullptr };
+
+	HyperedgeVector inner_edges, bound_edges, add_edges;
 
 	/*
 	for (int k = 0; k <= RecLevel; k++)
@@ -540,22 +546,22 @@ Hypertree *DetKDecomp::decomp(HE_VEC *HEdges, VE_VEC *Connector, int RecLevel)
 					// Output the search progress
 					// cout << "(" << RecLevel << ")" << endl;
 
-					// Set labels of separating nodes and hyperedges to -1
-					MyHg->resetEdgeLabels();
-					MyHg->resetVertexLabels();
+					// Create a separator 
+					separator = make_shared<Separator>();
+
 					for(i=0; i < nbr_sel_cov; i++) 
-						bound_edges[cov_sep_set[i]]->labelAll(-1);
+						separator->insert(bound_edges[cov_sep_set[i]]);
 					
-					if(add_edge) 
-						add_edges[i_add]->labelAll(-1);
+					if (add_edge)
+						separator->insert(add_edges[i_add]);
 
 					SubedgeSeparatorFactory sub_sep_fac;
 
 					do {
-						
-
 						// Check if selected hyperedges were already used before as separator
-						reused_sep = getSepParts(sep_size, &separator, &succ_parts, &fail_parts);
+						auto &reused = getSepParts(separator);
+
+						/*
 						if (!reused_sep) {
 							// Create a separator array and lists for decomposable and undecomposable parts
 							// keep sub_separator if built from a subedge separator
@@ -601,8 +607,12 @@ Hypertree *DetKDecomp::decomp(HE_VEC *HEdges, VE_VEC *Connector, int RecLevel)
 						cout << endl;
 						*/
 
+						vector<DecompComponent> partitions;
+						vector<bool> cut_parts;
+						list<HypertreeSharedPtr> Subtrees;
+
 						// Separate hyperedges into partitions with corresponding connector nodes
-						nbr_of_parts = separate(HEdges, partitions, child_connectors);
+						nbr_of_parts = separate(separator, HEdges, partitions);
 
 						// Create auxiliary array
 						cut_parts.clear();
@@ -611,21 +621,21 @@ Hypertree *DetKDecomp::decomp(HE_VEC *HEdges, VE_VEC *Connector, int RecLevel)
 						// Check partitions for decomposibility and undecomposibility
 						fail_sep = false;
 						for (i = 0; i < partitions.size(); i++) {
-							if (partitions[i]->size() >= cnt_edges) {
+							if (partitions[i].size() >= cnt_edges) {
 								//writeErrorMsg("Monotonicity violated.", "DetKDecomp::decomp");
 								fail_sep = true;
-								fail_parts->push_back((*partitions[i])[0]);
+								reused.failed.push_back(partitions[i].first());
 								break;
 							}
 
 							// Check for undecomposability
-							if (containsLabel(fail_parts, (*partitions[i])[0]->getLabel())) {
+							if (partitions[i].containsOneOf(reused.failed)) {
 								fail_sep = true;
 								break;
 							}
 
 							// Check for decomposibility
-							if (containsLabel(succ_parts, (*partitions[i])[0]->getLabel()))
+							if (partitions[i].containsOneOf(reused.succ))
 								cut_parts[i] = true;
 							else
 								cut_parts[i] = false;
@@ -633,46 +643,27 @@ Hypertree *DetKDecomp::decomp(HE_VEC *HEdges, VE_VEC *Connector, int RecLevel)
 
 						if (!fail_sep) {
 							// Decompose partitions into hypertrees
-							Subtrees.clear();
 							for (i = 0; i < partitions.size(); i++) {
 								if (cut_parts[i]) {
 									// Prune subtree
-									htree = getHTNode(partitions[i], child_connectors[i], NULL);
-									htree->setCut();
-									htree->setLabel(RecLevel + 1);
+									htree = getCutNode(RecLevel + 1, partitions[i]);
 								}
 								else {
 									// Decompose component recursively
-									htree = decomp(partitions[i], child_connectors[i], RecLevel + 1);
+									htree = decomp(partitions[i], RecLevel + 1);
 									if (htree == nullptr)
-										fail_parts->push_back((*partitions[i])[0]);
+										reused.failed.push_back(partitions[i][0]);
 									else
-										succ_parts->push_back((*partitions[i])[0]);
+										reused.succ.push_back(partitions[i][0]);
 								}
-
-								delete partitions[i];
-								delete child_connectors[i];
 
 								if (htree != nullptr)
 									Subtrees.push_back(htree);
 								else break;
 							}
 
-							// Delete remaining partitions and connectors
-							for (i++; i < partitions.size(); i++) {
-								delete partitions[i];
-								delete child_connectors[i];
-							}
-							partitions.clear();
-							child_connectors.clear();
-							cut_parts.clear();
-
-							if (htree == nullptr) {
-								// Delete previously created subtrees
-								for (TreeIter = Subtrees.begin(); TreeIter != Subtrees.end(); TreeIter++)
-									delete *TreeIter;
-							}
-							else {
+							//Either all components decomposed or some component failed
+							if (htree != nullptr) {
 								// Create a new hypertree node
 								if (sub_edge) {
 									for (auto he : *separator)
@@ -686,23 +677,9 @@ Hypertree *DetKDecomp::decomp(HE_VEC *HEdges, VE_VEC *Connector, int RecLevel)
 									if (add_edge)
 										add_edges[i_add]->setLabel(-1);
 								}
-								htree = getHTNode(separator, Connector, &Subtrees);
+								htree = getHTNode(HEdges, separator, Connector, Subtrees);
 							}
 						}
-						else {
-							// Delete partitions and connectors
-							for (i = 0; i < partitions.size(); i++) {
-								delete partitions[i];
-								delete child_connectors[i];
-							}
-							partitions.clear();
-							child_connectors.clear();
-							cut_parts.clear();
-						}
-
-						//Needed so that in the next iteration getSepParts finds correct used separator
-						for (auto he : *separator)
-							he->labelAll(0);
 
 						if (MyBIP && htree == nullptr) {
 							//Start sub_edge procedure
@@ -711,25 +688,16 @@ Hypertree *DetKDecomp::decomp(HE_VEC *HEdges, VE_VEC *Connector, int RecLevel)
 								sub_sep_fac.init(MyHg, HEdges, separator, MySubedges);
 							}
 
-							sub_separator = nullptr;
 							bool found = false;
-							while (!found && (sub_separator = sub_sep_fac.next()) != nullptr) {
+							while (!found && (separator = sub_sep_fac.next())->size() != 0) {
 								found = true;
 								//Check if new sub_separator still covers all connector nodes
-								if (!covers(sub_separator, Connector)) {
+								if (!covers(separator, Connector))
 									found = false;
-									delete sub_separator;
-								}
 							} 
 
 							// All subedge separators tried
-							if (sub_separator != nullptr) {
-								// Label Hypergraph accordignly
-								MyHg->resetEdgeLabels();
-								MyHg->resetVertexLabels();
-								for (auto he : *sub_separator)
-									he->labelAll(-1);
-							} else
+							if (separator->size() == 0)
 								sub_edge = false;
 						}
 
@@ -753,78 +721,34 @@ INPUT:	HTree: Hypertree that has to be expanded
 OUTPUT: HTree: Expanded hypertree
 */
 
-void DetKDecomp::expandHTree(Hypertree *HTree)
+void DetKDecomp::expandHTree(HypertreeSharedPtr &HTree)
 {
-	//int iNbrOfEdges, i;
-	Hypertree *cut_node, *subtree;
-	HE_VEC edges, parent_sep;
-	VE_VEC connector;
-	HE_SET *lambda;
-	VE_SET *chi;
-	//set<Hyperedge *>::iterator SetIter1;
-	//set<Node *>::iterator SetIter2;
+	HypertreeSharedPtr cut_node, subtree;
 	
-	/*
-	ParentSep = new Hyperedge*[iMyK+1];
-	if(ParentSep == NULL)
-		writeErrorMsg("Error assigning memory.", "DetKDecomp::expandHTree");
-	*/
-
 	while((cut_node = HTree->getCutNode()) != nullptr) {
 
 		// Store subgraph in an array
-		lambda = cut_node->getLambda();
-		
-		/*
-		edges = new Hyperedge*[lambda->size()+1];
-		if(HEdges == NULL)
-			writeErrorMsg("Error assigning memory.", "DetKDecomp::expandHTree");
-		*/
-		for (auto he : *lambda)
-			edges.push_back(he);
-		/*
-		for(iNbrOfEdges=0, SetIter1 = Lambda->begin(); SetIter1 != Lambda->end(); iNbrOfEdges++, SetIter1++)
-			HEdges[iNbrOfEdges] = *SetIter1;
-		HEdges[iNbrOfEdges] = NULL;
-		*/
+		auto &lambda = cut_node->getLambda();
+		HyperedgeVector edges(lambda.begin(), lambda.end());
 
 		// Store connector nodes in an array
-		chi = cut_node->getChi();
-		for (auto v : *chi)
-			connector.push_back(v);
-
-		/*
-		Connector = new Node*[Chi->size()+1];
-		if(Connector == NULL)
-			writeErrorMsg("Error assigning memory.", "DetKDecomp::expandHTree");
-		for(i=0, SetIter2 = Chi->begin(); SetIter2 != Chi->end(); i++, SetIter2++)
-			Connector[i] = *SetIter2;
-		Connector[i] = NULL;
-		*/
+		auto &chi = cut_node->getChi();
+		VertexSet connector(chi);
 
 		// Reconstruct parent separator
-		lambda = cut_node->getParent()->getLambda();
-		for (auto he : *lambda)
-			parent_sep.push_back(he);
-		/*
-		for(i=0, SetIter1 = Lambda->begin(); SetIter1 != Lambda->end(); i++, SetIter1++)
-			ParentSep[i] = *SetIter1;
-		ParentSep[i] = NULL;
-		*/
-
-		// Decompose subgraph
-		subtree = decomp(&edges, &connector, cut_node->getLabel());
+		auto parent = cut_node->getParent().lock();
+		auto &parent_lambda = parent->getLambda();
+		Separator parent_sep(HyperedgeVector(parent_lambda.begin(),parent_lambda.end()));
+		
+				// Decompose subgraph
+		subtree = decomp(edges, connector, cut_node->getLabel());
 		if(subtree == nullptr)
 			writeErrorMsg("Illegal decomposition pruning.", "H_DetKDecomp::expandHTree");
 
 		// Replace the pruned node by the corresponding subtree
-		cut_node->getParent()->insChild(subtree);
-		cut_node->getParent()->remChild(cut_node);
-		delete cut_node;
+		parent->insChild(subtree);
+		parent->remChild(cut_node);
 
-		edges.clear();
-		connector.clear();
-		parent_sep.clear();
 	}
 }
 
@@ -838,14 +762,10 @@ INPUT:	iK: Maximum separator size
 OUTPUT: return: Hypertree decomposition of HGraph
 */
 
-Hypertree *DetKDecomp::buildHypertree()
+HypertreeSharedPtr DetKDecomp::buildHypertree()
 {
-	Hypertree *HTree;
-	HE_VEC HEdges;
-	VE_VEC Connector;
-	list<list<Hyperedge *> *>::iterator ListIter1, ListIter2;
-	Hypergraph dual;
-	uint i{ 0 };
+	HypertreeSharedPtr HTree;
+	HyperedgeVector HEdges;
 
 	// Order hyperedges heuristically
 	HEdges = MyHg->getMCSOrder();
@@ -853,29 +773,17 @@ Hypertree *DetKDecomp::buildHypertree()
      	//cout << HEdges << endl;
 
 	// Store initial heuristic order as weight
-	for(int i=0; i < HEdges.size(); i++)
-		HEdges[i]->setWeight(i);
+	//for(int i=0; i < HEdges.size(); i++)
+	//	HEdges[i]->setWeight(i);
 
 	// Build hypertree decomposition
-	HTree = decomp(&HEdges, &Connector, 0);
+	HTree = decomp(HEdges);
 
 	// Expand pruned hypertree nodes
-	if((HTree != NULL) && (HTree->getCutNode() != NULL)) {
+	if((HTree != nullptr) && (HTree->getCutNode() != nullptr)) {
 		cout << "Expanding hypertree ..." << endl;
 		expandHTree(HTree);
 	}
-
-	// Free memory
-	for(auto sep : MySeps)
-		delete sep;
-	MySeps.clear();
-
-	for(ListIter1=MySuccSepParts.begin(), ListIter2=MyFailSepParts.begin(); ListIter1 != MySuccSepParts.end(); ListIter1++, ListIter2++) {
-		delete *ListIter1;
-		delete *ListIter2;
-	}
-	MySuccSepParts.clear();
-	MyFailSepParts.clear();
 
 	return HTree;
 }

@@ -8,10 +8,11 @@
 #include "Hypergraph.h"
 #include "Vertex.h"
 #include "Subedges.h"
+#include "Separator.h"
 
 class SubedgeSeparatorFactory
 {
-	vector<HE_VEC *> MySubSets;
+	vector<HyperedgeVector> MySubSets;
 	vector<int> MyState;
 	bool MyInit{ false };
 
@@ -19,7 +20,7 @@ public:
 	SubedgeSeparatorFactory();
 	~SubedgeSeparatorFactory();
 
-	void init(Hypergraph* hg, HE_VEC *comp, HE_VEC *sep, Subedges *subs);
-	HE_VEC *next();
+	void init(const HypergraphSharedPtr &hg, const HyperedgeVector &comp, const SeparatorSharedPtr &sep, const unique_ptr<Subedges> &subs);
+	SeparatorSharedPtr next();
 };
 

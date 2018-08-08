@@ -7,39 +7,50 @@
 #include <list>
 
 #include "Globals.h"
-
-class Hypergraph;
-class Hypertree;
-class Superedge;
+#include "Hypergraph.h"
+#include "Hypertree.h"
+#include "Separator.h"
+#include "DecompComponent.h"
 
 class Decomp
 {
-private:
-	// Collects connected hyperedges and the corresponding boundary nodes
-	void collectReachEdges(Hyperedge *Edge, int Label, HE_VEC *Edges, VE_VEC *Connector);
-
 protected:
-	Hypergraph* MyHg;
+	HypergraphSharedPtr MyHg;
 	int MyK;
 
 	// Separates a set of hyperedges into partitions with corresponding connecting nodes
-	int separate(HE_VEC *HEdges, vector<HE_VEC*> &Partitions, vector<VE_VEC*> &Connectors);
+	size_t separate(const SeparatorSharedPtr &sep, const HyperedgeVector &edges, vector<DecompComponent> &partitions) const;
 
 	// Creates a hypertree node
-	Hypertree *getHTNode(HE_VEC *HEdges, VE_VEC *ChiConnect = nullptr, list<Hypertree *> *Subtrees = nullptr, Superedge* Super = nullptr);
+	HypertreeSharedPtr getHTNode(const HyperedgeVector &comp, const HyperedgeVector &lambda, const VertexSet &ChiConnect = VertexSet(), const list<HypertreeSharedPtr> &Subtrees = list<HypertreeSharedPtr>(), const SuperedgeSharedPtr &Super = nullptr) const;
+	HypertreeSharedPtr getHTNode(const HyperedgeVector &comp, const SeparatorSharedPtr &lambda, const VertexSet &ChiConnect = VertexSet(), const list<HypertreeSharedPtr> &Subtrees = list<HypertreeSharedPtr>(), const SuperedgeSharedPtr &Super = nullptr) const {
+		HyperedgeVector edges;
+
+		for (auto e : lambda->allEdges())
+			edges.push_back(e);
+		
+		return getHTNode(comp, edges, ChiConnect, Subtrees, Super);
+	}
+
+
+	// Creates a hypertree cutnode
+	HypertreeSharedPtr getCutNode(int label, const HyperedgeVector &lambda, const VertexSet &ChiConnect = VertexSet()) const;
+	HypertreeSharedPtr getCutNode(int label, const DecompComponent &decomp) const {
+		return getCutNode(label, decomp.component(), decomp.connector());
+	}
 
 	// Decompose trivial cases
-	Hypertree *decompTrivial(HE_VEC *HEdges, VE_VEC *Connector);
+	HypertreeSharedPtr decompTrivial(const HyperedgeVector &edges, const VertexSet &connector) const;
 
 public:
-	Decomp(Hypergraph* hg, int k) : MyHg{ hg }, MyK{ k } { 
+	Decomp(const HypergraphSharedPtr &hg, int k) : MyHg{ hg }, MyK{ k } { 
 		if (MyK <= 0)
 			writeErrorMsg("Illegal hypertree-width.", "Decomp::Decomp");
 	}
 	virtual~Decomp();
 
 	// Constructs a hypertree decomposition of width at most MyK (if it exists)
-	virtual Hypertree *buildHypertree() = 0;
+	virtual HypertreeSharedPtr buildHypertree() = 0;
 };
 
 #endif

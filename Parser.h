@@ -151,31 +151,31 @@ public:
 	void parseFile(const char *cNameOfFile);
 
 	// Returns the number of atoms currently stored in the data structures
-	int getNbrOfAtoms();
+	int getNbrOfAtoms() const;
 
 	// Returns the number of variables currently stored in the data structures
-	int getNbrOfVars();
+	int getNbrOfVars() const;
 	
 	// Returns the number of variables in a given atom
-	int getNbrOfVars(int iAtom);
+	int getNbrOfVars(int iAtom) const;
 	
 	// Returns the number of atoms to which a given variable belongs
-	int getNbrOfAtoms(int iVar);
+	int getNbrOfAtoms(int iVar) const;
 
 	// Returns the number of atoms that are neighbours (i.e., have common variables) of a given atom
-    int getNbrOfAtomNeighbours(int iAtom);
+    int getNbrOfAtomNeighbours(int iAtom) const;
 
 	// Returns the number of variables that are neighbours (i.e., have common atoms) of a given variable
-    int getNbrOfVarNeighbours(int iVar);
+    int getNbrOfVarNeighbours(int iVar) const;
 
 	// Returns the number of syntax warnings
-	int getNbrOfWarnings();
+	int getNbrOfWarnings() const;
 	
 	// Returns the name of the iAtom-th atom
-	char *getAtom(int iAtom);
+	char *getAtom(int iAtom) const;
 
 	// Returns the name of the iVar-th variable
-	char *getVariable(int iVar);
+	char *getVariable(int iVar) const;
 
 	// Returns successively the variables belonging to atoms in the following order:
 	// V0 of A0, V1 of A0, V2 of A0, ..., Vn0 of A0, V0 of A1, V1 of A1, ..., Vn1 of A1, V0 of A2, ...

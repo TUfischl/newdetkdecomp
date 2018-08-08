@@ -18,14 +18,41 @@ class Hyperedge;
 class Subedges
 {
 private:
-	Hypergraph *MyHg;
+	HypergraphSharedPtr MyHg;
 	int MyK;
-	unordered_map<Hyperedge*, HE_VEC*> MySubedges;
+	unordered_map<HyperedgeSharedPtr, HyperedgeVector, NamedEntityHash> MySubedges;
 
 public:
-	Subedges(Hypergraph* hg, int k) : MyHg{ hg }, MyK{ k } { }
-	~Subedges();
-	HE_VEC* getSubedges(Hyperedge *he);
+	Subedges(const HypergraphSharedPtr &hg, int k) : MyHg{ hg }, MyK{ k } { }
+	//HE_VEC* getSubedges(Hyperedge *he);
+
+	void init();
+	void init(const HyperedgeSharedPtr &he);
+
+	void push_back(const HyperedgeSharedPtr &orig, const HyperedgeSharedPtr &subedge);
+	
+	auto size() const { return MySubedges.size(); }
+
+	size_t size(const HyperedgeSharedPtr &orig) const;
+
+	auto allSubedges(const HyperedgeSharedPtr &orig) -> decltype(make_iterable(MySubedges.at(orig).begin(), MySubedges.at(orig).end()))
+	{
+		return make_iterable(MySubedges.at(orig).begin(), MySubedges.at(orig).end());
+	}
+
+	auto allSubedges(const HyperedgeSharedPtr &orig) const -> decltype(make_iterable(MySubedges.at(orig).begin(), MySubedges.at(orig).end()))
+	{
+		return make_iterable(MySubedges.at(orig).end(), MySubedges.at(orig).end());
+	}
+
+	HyperedgeSharedPtr get(const HyperedgeSharedPtr &orig, size_t index) const;
+
+	auto begin(const HyperedgeSharedPtr &orig);
+	auto end(const HyperedgeSharedPtr &orig);
+
+	auto &subedges(const HyperedgeSharedPtr &orig) const { return MySubedges.at(orig);  }
+
+	
 };
 
 #endif

@@ -21,7 +21,7 @@ using namespace std;
 //////////////////////////////////////////////////////////////////////
 
 
-SetCover::SetCover(Hypergraph *H) : MyH { H }
+SetCover::SetCover(const HypergraphSharedPtr &H) : MyH { H }
 {
 }
 
@@ -37,19 +37,18 @@ SetCover::~SetCover()
 //////////////////////////////////////////////////////////////////////
 
 
-HE_SET SetCover::NodeCover1(VE_SET &Vertices, HE_SET &HEdges, bool bDeterm)
+HyperedgeSet SetCover::NodeCover1(const VertexSet &Vertices, const HyperedgeSet &HEdges, bool bDeterm)
 {
 	size_t iNbrOfCovEdges, iNbrOfUncovNodes, iMax;
-	HE_SET CovEdges{};
-	Hyperedge *hedge;
-	HE_VEC CovCand;
+	HyperedgeSet CovEdges{};
+	HyperedgeSharedPtr hedge;
+	HyperedgeVector CovCand;
 
 	iNbrOfCovEdges = 0;
 	iNbrOfUncovNodes = Vertices.size();
 
 	// Clear labels on hypergraph (hide all vertices and edges)
-	MyH->resetEdgeLabels(-1);
-	MyH->resetVertexLabels(-1);
+	MyH->setAllLabels(-1);
 
 	// Unhide vertices to be covered
 	for (auto v : Vertices) {
@@ -147,16 +146,16 @@ HE_SET SetCover::NodeCover1(VE_SET &Vertices, HE_SET &HEdges, bool bDeterm)
 }
 
 
-HE_SET SetCover::NodeCover2(VE_SET &Vertices, HE_SET &HEdges, bool bDeterm)
+HyperedgeSet SetCover::NodeCover2(const VertexSet &Vertices, const HyperedgeSet &HEdges, bool bDeterm)
 {
 	size_t iNbrOfCovEdges, iNbrOfUncovNodes, iContained;
 	int i;
-	HE_SET CovEdges{};
+	HyperedgeSet CovEdges{};
 	double iMax;
-	unordered_map<Vertex *, double> NodeWeights;
-	unordered_map<Hyperedge*, double> EdgeWeights;
-	Hyperedge *hedge;
-	HE_VEC CovCand;
+	unordered_map<VertexSharedPtr, double> NodeWeights;
+	unordered_map<HyperedgeSharedPtr, double> EdgeWeights;
+	HyperedgeSharedPtr hedge;
+	HyperedgeVector CovCand;
 
 	iNbrOfCovEdges = 0;
 	iNbrOfUncovNodes = Vertices.size();
@@ -167,8 +166,7 @@ HE_SET SetCover::NodeCover2(VE_SET &Vertices, HE_SET &HEdges, bool bDeterm)
 	EdgeWeights.reserve(Nodes.size());
 	*/
 
-	MyH->resetEdgeLabels(-1);
-	MyH->resetVertexLabels(-1);
+	MyH->setAllLabels(-1);
 
 	// Compute the node weights
 	for(auto v : Vertices) {
@@ -276,7 +274,7 @@ HE_SET SetCover::NodeCover2(VE_SET &Vertices, HE_SET &HEdges, bool bDeterm)
 }
 
 
-bool SetCover::covers(VE_SET &Vertices, HE_SET &HEdges)
+bool SetCover::covers(const VertexSet &Vertices, const HyperedgeSet &HEdges)
 {
 	// Reset node labels
 	for(auto v : Vertices)
@@ -319,25 +317,25 @@ bool SetCover::covers(Node **Nodes, Hyperedge **HEdges)
 */
 
 
-HE_SET SetCover::cover(VE_SET &Nodes, HE_SET &HEdges)
+HyperedgeSet SetCover::cover(const VertexSet &Vertices, const HyperedgeSet &HEdges)
 {
-	HE_SET CovEdges1, CovEdges2;
+	HyperedgeSet CovEdges1, CovEdges2;
 
-	if(!covers(Nodes, HEdges))
+	if(!covers(Vertices, HEdges))
 		writeErrorMsg("Covering not possible.", "SetCover::cover");
 
 	// Apply set covering
-	CovEdges1 = NodeCover1(Nodes, HEdges, true);
+	CovEdges1 = NodeCover1(Vertices, HEdges, true);
 
-	CovEdges2 = NodeCover1(Nodes, HEdges, false);
+	CovEdges2 = NodeCover1(Vertices, HEdges, false);
 	if(CovEdges2.size() < CovEdges1.size())
 		CovEdges1 = CovEdges2;
 
-	CovEdges2 = NodeCover2(Nodes, HEdges, true);
+	CovEdges2 = NodeCover2(Vertices, HEdges, true);
 	if(CovEdges2.size() < CovEdges1.size()) 
 		CovEdges1 = CovEdges2;
 
-	CovEdges2 = NodeCover2(Nodes, HEdges, false);
+	CovEdges2 = NodeCover2(Vertices, HEdges, false);
 	if(CovEdges2.size() < CovEdges1.size()) 
 		CovEdges1 = CovEdges2;
 

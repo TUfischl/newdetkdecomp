@@ -12,18 +12,28 @@
 // way than would be necessary for det-k-decomp.
 
 
-// globalbip-k-decomp V2.0
+// localbip-k-decomp V2.0
 //
 // Reference paper: W. Fischl, G. Gottlob and R. Pichler,
 // Hypergraph Decomposition Methods: From Theory to Practice,
 // Submitted for publication.
 //
 // Note: This program is a prototype implementation and does in no sense
-// claim to be the most efficient way of implementing globalbip-k-decomp. Moreover,
+// claim to be the most efficient way of implementing localbip-k-decomp. Moreover,
 // several parts of the code have been developed within an implementation
 // framework for evaluating several decomposition algorithms. These parts of 
 // the code may therefore be unnecessary or are formulated in a more general 
-// way than would be necessary for globalbip-k-decomp.
+// way than would be necessary for localbip-k-decomp.
+
+// rankfhd-k-decomp V1.0
+//
+//
+// Note: This program is a prototype implementation and does in no sense
+// claim to be the most efficient way of implementing localbip-k-decomp. Moreover,
+// several parts of the code have been developed within an implementation
+// framework for evaluating several decomposition algorithms. These parts of 
+// the code may therefore be unnecessary or are formulated in a more general 
+// way than would be necessary for localbip-k-decomp.
 
 
 #define _CRT_SECURE_NO_DEPRECATE
@@ -43,12 +53,11 @@ using namespace std;
 #include "../Vertex.h"
 #include "../Hyperedge.h"
 #include "../Globals.h"
-#include "../DetKDecomp.h"
-#include "../BalKDecomp.h"
 #include "../Subedges.h"
+#include "../RankFHDecomp.h"
 
-void usage(int, char **, int *, bool *);
-HypertreeSharedPtr decompK(const HypergraphSharedPtr &, int);
+void usage(int, char **, double *, bool *);
+HypertreeSharedPtr decompK(const HypergraphSharedPtr &, double);
 
 
 char *cInpFile, *cOutFile;
@@ -57,24 +66,26 @@ char *cInpFile, *cOutFile;
 
 int main(int argc, char **argv)
 {
-	int iRandomInit, K = 0;
+	int iRandomInit;
+	double K = 0;
 	bool bDef;
 	time_t start, end;
 	HypergraphSharedPtr HG = make_shared<Hypergraph>();
 	Parser *P;
-	HypertreeSharedPtr HT;
+	HypertreeSharedPtr HT{ nullptr };
 
-	cout << "*** globalbip-k-decomp (version 2.0) ***" << endl << endl;
+	cout << "*** rankfhd-k-decomp (version 1.0) ***" << endl << endl;
 
 	// Check command line arguments and initialize random number generator
 	usage(argc, argv, &K, &bDef);
-	//srand(200);
-	srand((unsigned int)time(NULL));
+	int seed = (unsigned int)time(NULL);
+	//int seed = 500;
+	srand(seed);
 	iRandomInit = random_range(999, 9999);
 	for (int i = 0; i < iRandomInit; i++) rand();
 
 	// Create parser object
-	if ((P = new Parser(bDef)) == NULL)
+	if ((P = new Parser(bDef)) == nullptr)
 		writeErrorMsg("Error assigning memory.", "main");
 
 	// Parse file
@@ -102,18 +113,19 @@ int main(int argc, char **argv)
 	{
 		cout << "Checking hypertree conditions ... " << endl;
 		time(&start);
-		HT->verify();
+		HT->verify(false);
 		time(&end);
 		cout << "Checking hypertree conditions done in " << difftime(end, start) << " sec." << endl << endl;
 		HT->outputToGML(cOutFile);
 		cout << "GML output written to: " << cOutFile << endl << endl;
+		HT.reset();
 	}
 
 	return EXIT_SUCCESS;
 }
 
 
-void usage(int argc, char **argv, int *K, bool *bDef)
+void usage(int argc, char **argv, double *K, bool *bDef)
 {
 	int i, j, k;
 	*bDef = false;
@@ -130,10 +142,10 @@ void usage(int argc, char **argv, int *K, bool *bDef)
 		if (i < argc - 1) {
 			for (j = 0; argv[i][j] == '0'; j++);
 			for (k = 0; (k < 6) && (argv[i][j + k] != '\0'); k++)
-				if (!((argv[i][j + k] >= '0') && (argv[i][j + k] <= '9')))
+				if (!(((argv[i][j + k] >= '0') && (argv[i][j + k] <= '9')) || (argv[i][j + k] == '.')))
 					break;
 			if (argv[i][j + k] == '\0') {
-				*K = atoi(argv[i++]);
+				*K = atof(argv[i++]);
 				if (*K < 1) {
 					cerr << "Illegal argument k = 0." << endl;
 					exit(EXIT_FAILURE);
@@ -168,45 +180,28 @@ void usage(int argc, char **argv, int *K, bool *bDef)
 			cInpFile[i] = '.';
 }
 
-//GlobalBIP
-HypertreeSharedPtr decompK(const HypergraphSharedPtr &HG, int iWidth)
+//LocalBIP
+HypertreeSharedPtr decompK(const HypergraphSharedPtr &HG, double iWidth)
 {
 	time_t start, end;
 	HypertreeSharedPtr HT;
-	DetKDecomp Decomp(HG, iWidth, false);
-	Subedges subs(HG, iWidth);
-	HyperedgeSet edges;
-
-	cout << "Adding subedges ... " << endl;
-	time(&start);
-	// Add Subedges
-	subs.init();
-	for (auto e : HG->allEdges())
-		for (auto sub : subs.subedges(e))
-			edges.insert(sub);
-
-	for (auto e : edges)
-		HG->insertEdge(e);
-	time(&end);
-	cout << edges.size() << " subedges added in " << difftime(end, start) << " sec." << endl << endl;
+	RankFHDecomp Decomp(HG, iWidth);
 
 
 	// Apply the decomposition algorithm
-	cout << "Building hypertree (globalbip-" << iWidth << "-decomp) ... " << endl;
+	cout << "Building hypertree (det-" << iWidth << "-decomp) ... " << endl;
 	time(&start);
 	HT = Decomp.buildHypertree();
 	time(&end);
 	if (HT == NULL)
-		cout << "Generalized hypertree of width " << iWidth << " not found in " << difftime(end, start) << " sec." << endl << endl;
+		cout << "Hypertree of width " << iWidth << " not found in " << difftime(end, start) << " sec." << endl << endl;
 	else {
-		cout << "Building generalized hypertree done in " << difftime(end, start) << " sec";
-		cout << " (generalized-hypertree-width: " << HT->getHTreeWidth() << ")." << endl << endl;
+		cout << "Building hypertree done in " << difftime(end, start) << " sec";
+		cout << " (fractional-hypertree-width: " << iWidth << ")." << endl << endl;
 
 		HT->shrink(false);
 	}
 
 	return HT;
 }
-
-
 

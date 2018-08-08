@@ -13,36 +13,42 @@
 #include <unordered_set>
 #include <algorithm>
 
-#include "Component.h"
+#include "NamedEntity.h"
 #include "Vertex.h"
 #include "Globals.h"
 #include "Hyperedge.h"
 
 using namespace std;
 
-
 class Superedge :
 	public Hyperedge
 {
 private:
-	HE_SET MyEdges;
+	HyperedgeSet Edges;
 
 public:
 	//Real Constructors
 	Superedge(const string& name) : Hyperedge(name) { 
-		MyGravity = 0;
+		
 	}
 
-	void add(HE_VEC *Edges, VE_SET *Vertices);
+	void add(const HyperedgeVector &Edges, const VertexSet &VertComp);
 
 	// Removes Vertices from this edge that are not in vertices
-	void reduce(VE_SET *vertices);
+	void reduce(const VertexSet &vertices);
 
-	static Superedge *getSuperedge(HE_VEC *Edges, VE_SET *VetComp);
+	static std::shared_ptr<Superedge> getSuperedge(const HyperedgeVector &Edges, const VertexSet &VertComp);
 
+	virtual bool isHeavy() const { return true; }
+	virtual size_t getWeight() const { return Edges.size(); }
 
+	virtual void setAllLabels(int label = 0) const;
 
-	~Superedge();
+	friend std::ostream& operator<< (std::ostream& stream, const std::shared_ptr<Superedge>& super);
 };
+
+using SuperedgeSharedPtr = std::shared_ptr<Superedge>;
+
+
 
 #endif

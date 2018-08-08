@@ -11,7 +11,7 @@ Hyperedge::Hyperedge(const string & name) : Hyperedge(++G_EdgeID, name)
 {
 }
 
-Hyperedge::Hyperedge(const string & name, const VE_SET& vertices) : Hyperedge(++G_EdgeID, name, vertices)
+Hyperedge::Hyperedge(const string & name, const VertexSet& vertices) : Hyperedge(++G_EdgeID, name, vertices)
 {
 }
 
@@ -19,67 +19,79 @@ Hyperedge::~Hyperedge()
 {
 }
 
-void Hyperedge::add(Vertex * v)
+void Hyperedge::add(const VertexSharedPtr &v)
 {
 	//if (find(v->getId()) == nullptr)
-		MyVertices.insert(v);
+		Vertices.insert(v);
 	//else
 	//	writeErrorMsg("Hyperedge " + getName() + " already contains vertex with id " + to_string(v->getId()), "Hyperedge::addVertex");
 }
 
-Vertex * Hyperedge::find(Vertex * v)
+VertexSharedPtr Hyperedge::find(const VertexSharedPtr &v)
 {
-	VE_SET::const_iterator it = MyVertices.find(v);
+	VertexSet::const_iterator it = Vertices.find(v);
 
-	if (it == MyVertices.cend())
+	if (it == Vertices.cend())
 		return nullptr;
 	else
 		return *it;
 }
 
-Vertex * Hyperedge::find(int id)
+VertexSharedPtr Hyperedge::find(int id)
 {
-	for (auto v : MyVertices)
+	for (auto v : Vertices)
 		if (v->getId() == id)
 			return v;
 
 	return nullptr;
 }
 
-Vertex * Hyperedge::find(const string & name)
+VertexSharedPtr Hyperedge::find(const string & name)
 {
-	for (auto v : MyVertices)
+	for (auto v : Vertices)
 		if (v->getName() == name)
 			return v;
 
 	return nullptr;
 }
 
-
-void Hyperedge::labelAll(int label)
+bool Hyperedge::isCoveredBy(const VertexSet & v) const
 {
-	this->setLabel(label);
-	for (auto v : MyVertices)
-		v->setLabel(label);
+	for (auto edge_vertex : Vertices)
+		if (v.find(edge_vertex) == v.cend())
+			return false;
+
+	return true;
 }
 
-int totalGravity(HE_VEC & HEdges)
+
+void Hyperedge::setAllLabels(int label) const
 {
-	int total{ 0 };
+	NamedEntity::setLabel(label);
 
-	for (auto he : HEdges)
-		total += he->MyGravity;
-
-	return total;
-
+	for (auto v : Vertices)
+		v->setLabel(label);
 }
 
 std::ostream & operator<<(std::ostream & out, const Hyperedge & he)
 {
 	out << he.getName() << "(";
-	for (auto v_it = he.MyVertices.cbegin(); v_it != he.MyVertices.cend();) {
+	for (auto v_it = he.Vertices.cbegin(); v_it != he.Vertices.cend();) {
 		out << *(*v_it);
-		if ((++v_it) != he.MyVertices.cend())
+		if ((++v_it) != he.Vertices.cend())
+			out << ",";
+	}
+	out << ")";
+
+	return out;
+}
+
+std::ostream & operator<<(std::ostream & out, const HyperedgeVector & he)
+{
+	out << "(";
+	for (auto it = he.cbegin(); it != he.cend();) {
+		out << (*it)->getName();
+		if (++it != he.cend())
 			out << ",";
 	}
 	out << ")";
