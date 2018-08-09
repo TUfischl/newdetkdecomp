@@ -14,7 +14,7 @@ In order to compile NewDetKDecomp you need a C++ compiler supporting C++14 and t
 
 ### Installing
 
-First download and install coinor-cbc as explained on their web page.
+First download and install coinor-cbc as explained on their web page. E.g., in Ubuntu install the package: `coinor-libclp-dev`, which downloads already all needed packages.
 
 Compile the programs by running make in the root directory.
 
