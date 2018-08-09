@@ -1,9 +1,9 @@
 using namespace std;
 
 //#ifdef _LINUX
-//#include <coin/ClpSimplex.hpp>
+#include <coin/ClpSimplex.hpp>
 //#elseif _WIN32
-#include "ClpSimplex.hpp"
+//#include "ClpSimplex.hpp"
 //#endif
 
 #include "FecCalculator.h"
